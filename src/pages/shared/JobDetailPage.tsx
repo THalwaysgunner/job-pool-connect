@@ -177,6 +177,10 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
     <div className="flex h-[calc(100vh-theme(spacing.14))] -m-6">
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Tab header */}
+        <div className="h-14 flex items-center px-6 border-b shrink-0">
+          <h2 className="text-lg font-semibold">{navItems.find((n) => n.key === activeTab)?.label}</h2>
+        </div>
         {/* Messages tab — full height chat */}
         {activeTab === "messages" && (
           <div className="flex flex-col h-full">
