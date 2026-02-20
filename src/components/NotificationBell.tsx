@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -9,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 
 const NotificationBell: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
@@ -41,6 +43,17 @@ const NotificationBell: React.FC = () => {
     fetchNotifications();
   };
 
+  const handleNotificationClick = async (n: any) => {
+    if (!n.is_read) {
+      await supabase.from("notifications").update({ is_read: true }).eq("id", n.id);
+      fetchNotifications();
+    }
+    setOpen(false);
+    if (n.link) {
+      navigate(n.link);
+    }
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -65,7 +78,7 @@ const NotificationBell: React.FC = () => {
             <p className="text-sm text-muted-foreground p-4 text-center">No notifications</p>
           ) : (
             notifications.map((n) => (
-              <div key={n.id} className={`p-3 border-b last:border-0 ${!n.is_read ? "bg-accent/50" : ""}`}>
+              <div key={n.id} onClick={() => handleNotificationClick(n)} className={`p-3 border-b last:border-0 cursor-pointer hover:bg-accent/80 transition-colors ${!n.is_read ? "bg-accent/50" : ""}`}>
                 <p className="text-sm font-medium">{n.title}</p>
                 <p className="text-xs text-muted-foreground">{n.message}</p>
                 <p className="text-xs text-muted-foreground mt-1">{formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</p>
