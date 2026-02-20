@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, User, Building2 } from "lucide-react";
 
 const docTypes = [
+  { value: "client_id", label: "Client ID (Teudat Zehut / Passport)" },
   { value: "registration_approval", label: "Company Registration Approval" },
   { value: "company_id", label: "Company ID / Identification" },
   { value: "accountant_approval", label: "Accountant Approval" },
@@ -23,7 +24,7 @@ const ClientSettings: React.FC = () => {
 
   // Profile state
   const [profile, setProfile] = useState<any>(null);
-  const [profileForm, setProfileForm] = useState({ full_name: "" });
+  const [profileForm, setProfileForm] = useState({ full_name: "", id_number: "" });
   const [passwordForm, setPasswordForm] = useState({ password: "", confirm: "" });
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
@@ -39,7 +40,7 @@ const ClientSettings: React.FC = () => {
     if (!user) return;
     // Fetch profile
     supabase.from("profiles").select("*").eq("user_id", user.id).single().then(({ data }) => {
-      if (data) { setProfile(data); setProfileForm({ full_name: data.full_name || "" }); }
+      if (data) { setProfile(data); setProfileForm({ full_name: data.full_name || "", id_number: (data as any).id_number || "" }); }
     });
     // Fetch company
     fetchCompany();
@@ -60,7 +61,7 @@ const ClientSettings: React.FC = () => {
   const saveProfile = async () => {
     setSavingProfile(true);
     try {
-      await supabase.from("profiles").update({ full_name: profileForm.full_name }).eq("user_id", user!.id);
+      await supabase.from("profiles").update({ full_name: profileForm.full_name, id_number: profileForm.id_number } as any).eq("user_id", user!.id);
       toast({ title: "Profile updated" });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -150,6 +151,10 @@ const ClientSettings: React.FC = () => {
               <div>
                 <Label>Full Name</Label>
                 <Input value={profileForm.full_name} onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })} />
+              </div>
+              <div>
+                <Label>ID Number (Teudat Zehut)</Label>
+                <Input value={profileForm.id_number} onChange={(e) => setProfileForm({ ...profileForm, id_number: e.target.value })} placeholder="e.g. 123456789" />
               </div>
               <Button onClick={saveProfile} disabled={savingProfile}>{savingProfile ? "Saving..." : "Save Changes"}</Button>
             </CardContent>
