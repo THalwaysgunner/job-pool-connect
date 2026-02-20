@@ -143,14 +143,19 @@ const AdminCompanies: React.FC = () => {
 
       {/* Company Detail Dialog */}
       <Dialog open={detailDialog.open} onOpenChange={(o) => { setDetailDialog({ ...detailDialog, open: o }); if (!o) { setCompanyDocs([]); setCompanyProfile(null); } }}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Company Details</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+          <div className="sticky top-0 z-10 bg-background pb-3 border-b">
+            <DialogHeader><DialogTitle>Company Details</DialogTitle></DialogHeader>
+            {detailDialog.company && (
+              <div className="mt-2">
+                <Badge variant={statusVariant(detailDialog.company.status) as any}>
+                  {detailDialog.company.status.replace(/_/g, " ")}
+                </Badge>
+              </div>
+            )}
+          </div>
           {detailDialog.company && (
-            <div className="space-y-4">
-              <Badge variant={statusVariant(detailDialog.company.status) as any}>
-                {detailDialog.company.status.replace(/_/g, " ")}
-              </Badge>
-
+            <div className="space-y-4 overflow-y-auto flex-1 pt-3">
               {companyProfile && (
                 <Card>
                   <CardHeader><CardTitle className="text-sm">Client Information</CardTitle></CardHeader>
