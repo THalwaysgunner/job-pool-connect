@@ -16,7 +16,9 @@ const ClientJobs: React.FC = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">My Jobs</h2>
+      <div className="sticky top-0 z-10 bg-background pb-4">
+        <h2 className="text-2xl font-bold">My Jobs</h2>
+      </div>
       {jobs.length === 0 ? (
         <p className="text-muted-foreground">No jobs yet.</p>
       ) : (

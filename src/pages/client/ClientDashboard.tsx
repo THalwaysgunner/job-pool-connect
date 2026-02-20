@@ -22,13 +22,15 @@ const ClientDashboard: React.FC = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Dashboard</h2>
-        {canCreateJob && (
-          <Link to="/client/jobs/new">
-            <Button><PlusCircle className="h-4 w-4 mr-2" />New Job</Button>
-          </Link>
-        )}
+      <div className="sticky top-0 z-10 bg-background pb-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Dashboard</h2>
+          {canCreateJob && (
+            <Link to="/client/jobs/new">
+              <Button><PlusCircle className="h-4 w-4 mr-2" />New Job</Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
