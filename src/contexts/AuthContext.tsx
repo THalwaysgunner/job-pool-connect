@@ -34,28 +34,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let mounted = true;
 
-    // Safety timeout - never stay loading forever
     const timeout = setTimeout(() => {
       if (mounted) setLoading(false);
     }, 5000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         if (!mounted) return;
         if (session?.user) {
           setUser(session.user);
-          const { data } = await supabase
+          // Decouple DB call from auth callback to avoid deadlock
+          supabase
             .from("user_roles")
             .select("role")
-            .eq("user_id", session.user.id);
-          if (mounted && data) {
-            setRoles(data.map((r: any) => r.role as AppRole));
-          }
+            .eq("user_id", session.user.id)
+            .then(({ data }) => {
+              if (mounted && data) {
+                setRoles(data.map((r: any) => r.role as AppRole));
+              }
+              if (mounted) setLoading(false);
+            });
         } else {
           setUser(null);
           setRoles([]);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
@@ -63,9 +66,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!mounted) return;
       if (session?.user) {
         setUser(session.user);
-        fetchRoles(session.user.id);
+        fetchRoles(session.user.id).then(() => {
+          if (mounted) setLoading(false);
+        });
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     }).catch(() => {
       if (mounted) setLoading(false);
     });
