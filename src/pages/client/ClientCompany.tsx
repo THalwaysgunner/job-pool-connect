@@ -61,6 +61,12 @@ const ClientCompany: React.FC = () => {
     if (!company) return;
     setUploading(true);
     try {
+      // Delete old rejected docs of same type first
+      const rejectedDocs = docs.filter(d => d.doc_type === docType && d.status === "rejected");
+      for (const rd of rejectedDocs) {
+        await supabase.storage.from("company-documents").remove([rd.file_path]);
+        await supabase.from("company_documents").delete().eq("id", rd.id);
+      }
       const path = `${company.id}/${docType}_${Date.now()}_${file.name}`;
       const { error } = await supabase.storage.from("company-documents").upload(path, file);
       if (error) throw error;
