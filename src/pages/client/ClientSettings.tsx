@@ -122,6 +122,26 @@ const ClientSettings: React.FC = () => {
   const submitForApproval = async () => {
     if (!company) return;
     await supabase.from("companies").update({ status: "submitted_for_approval" }).eq("id", company.id);
+    
+    // Notify all admins
+    try {
+      const { data: adminRoles } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+      if (adminRoles) {
+        for (const admin of adminRoles) {
+          await supabase.functions.invoke("create-notification", {
+            body: {
+              user_id: admin.user_id,
+              title: "Company Submitted for Approval",
+              message: `Company "${company.business_name}" has been submitted for approval.`,
+              link: "/admin/companies",
+            },
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to send notifications:", e);
+    }
+    
     toast({ title: "Submitted for approval" });
     fetchCompany();
   };
