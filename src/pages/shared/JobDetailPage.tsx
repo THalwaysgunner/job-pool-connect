@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,6 +29,11 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
   const [newAnswer, setNewAnswer] = useState<Record<string, string>>({});
   const [newPR, setNewPR] = useState({ title: "", amount: "", details: "" });
   const [disputeReason, setDisputeReason] = useState("");
+  const [activeTab, setActiveTab] = useState("summary");
+  const [seenMessages, setSeenMessages] = useState(0);
+  const [seenQuestions, setSeenQuestions] = useState(0);
+  const [seenPayments, setSeenPayments] = useState(0);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchAll = async () => {
     if (!id) return;
@@ -52,12 +57,45 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
 
   useEffect(() => { fetchAll(); }, [id]);
 
-  // Realtime messages
+  // Initialize seen counts on first load
+  useEffect(() => {
+    if (messages.length > 0 && seenMessages === 0) setSeenMessages(messages.length);
+  }, [messages.length > 0]);
+  useEffect(() => {
+    if (questions.length > 0 && seenQuestions === 0) setSeenQuestions(questions.length);
+  }, [questions.length > 0]);
+  useEffect(() => {
+    if (paymentRequests.length > 0 && seenPayments === 0) setSeenPayments(paymentRequests.length);
+  }, [paymentRequests.length > 0]);
+
+  // Mark as seen when switching to tab
+  useEffect(() => {
+    if (activeTab === "messages") setSeenMessages(messages.length);
+    if (activeTab === "questions") setSeenQuestions(questions.length);
+    if (activeTab === "payments") setSeenPayments(paymentRequests.length);
+  }, [activeTab, messages.length, questions.length, paymentRequests.length]);
+
+  // Auto-scroll messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
+
+  // Realtime for messages, questions, payments, deliverables
   useEffect(() => {
     if (!id) return;
-    const ch = supabase.channel(`job-messages-${id}`).on("postgres_changes", { event: "INSERT", schema: "public", table: "job_messages", filter: `job_id=eq.${id}` }, () => fetchAll()).subscribe();
+    const ch = supabase
+      .channel(`job-detail-${id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "job_messages", filter: `job_id=eq.${id}` }, () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "job_questions", filter: `job_id=eq.${id}` }, () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "payment_requests", filter: `job_id=eq.${id}` }, () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "deliverables", filter: `job_id=eq.${id}` }, () => fetchAll())
+      .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [id]);
+
+  const unreadMessages = Math.max(0, messages.length - seenMessages);
+  const unreadQuestions = Math.max(0, questions.length - seenQuestions);
+  const unreadPayments = Math.max(0, paymentRequests.length - seenPayments);
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !user || !id) return;
@@ -123,12 +161,21 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
         <Badge className="text-sm">{job.status.replace(/_/g, " ")}</Badge>
       </div>
 
-      <Tabs defaultValue="summary">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="summary">Summary</TabsTrigger>
-          <TabsTrigger value="messages">Messages</TabsTrigger>
-          <TabsTrigger value="questions">Q&A</TabsTrigger>
-          <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="messages" className="relative">
+            Messages
+            {unreadMessages > 0 && <Badge variant="destructive" className="ml-1.5 h-5 min-w-5 flex items-center justify-center p-0 text-xs">+{unreadMessages}</Badge>}
+          </TabsTrigger>
+          <TabsTrigger value="questions" className="relative">
+            Q&A
+            {unreadQuestions > 0 && <Badge variant="destructive" className="ml-1.5 h-5 min-w-5 flex items-center justify-center p-0 text-xs">+{unreadQuestions}</Badge>}
+          </TabsTrigger>
+          <TabsTrigger value="payments" className="relative">
+            Payments
+            {unreadPayments > 0 && <Badge variant="destructive" className="ml-1.5 h-5 min-w-5 flex items-center justify-center p-0 text-xs">+{unreadPayments}</Badge>}
+          </TabsTrigger>
           <TabsTrigger value="deliverables">Deliverables</TabsTrigger>
           {role === "client" && <TabsTrigger value="disputes">Disputes</TabsTrigger>}
         </TabsList>
@@ -159,12 +206,20 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
           <Card>
             <CardContent className="p-4">
               <ScrollArea className="h-80 mb-4">
-                {messages.map((m) => (
-                  <div key={m.id} className={`mb-3 p-2 rounded ${m.sender_user_id === user?.id ? "bg-primary/10 ml-8" : "bg-muted mr-8"}`}>
-                    <p className="text-sm">{m.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{new Date(m.created_at).toLocaleString()}</p>
-                  </div>
-                ))}
+                <div className="space-y-3 p-1">
+                  {messages.map((m) => {
+                    const isMine = m.sender_user_id === user?.id;
+                    return (
+                      <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[75%] px-3 py-2 rounded-2xl ${isMine ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}>
+                          <p className="text-sm whitespace-pre-wrap">{m.message}</p>
+                          <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/70 text-right" : "text-muted-foreground"}`}>{new Date(m.created_at).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
               </ScrollArea>
               {!isLocked && (
                 <div className="flex gap-2">
