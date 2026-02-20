@@ -338,7 +338,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
         </div>
 
         {/* Nav grid */}
-        <nav className="flex-1 px-4 overflow-y-auto">
+        <nav className="flex-1 px-4 pt-4 overflow-y-auto">
           <div className="grid grid-cols-2 gap-3">
             {navItems.map((item) => (
               <button
