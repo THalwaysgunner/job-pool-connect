@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Send, Check, AlertTriangle, Upload } from "lucide-react";
+import { Download, Send, Check, AlertTriangle, Upload, MessageSquare, HelpCircle, CreditCard, Package, FileWarning, Info } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ role }) => {
@@ -164,38 +164,51 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
 
   if (!job) return <div className="p-4 text-muted-foreground">Loading...</div>;
 
+  const navItems = [
+    { key: "summary", label: "Summary", icon: Info, badge: 0 },
+    { key: "messages", label: "Messages", icon: MessageSquare, badge: unreadMessages },
+    { key: "questions", label: "Q&A", icon: HelpCircle, badge: unreadQuestions },
+    { key: "payments", label: "Payments", icon: CreditCard, badge: unreadPayments },
+    { key: "deliverables", label: "Deliverables", icon: Package, badge: 0 },
+    ...(role === "client" ? [{ key: "disputes", label: "Disputes", icon: FileWarning, badge: 0 }] : []),
+  ];
+
   return (
-    <div className="max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold">{job.business_name}</h2>
-          <p className="text-muted-foreground">{job.business_category}</p>
-        </div>
-        <Badge className="text-sm">{job.status.replace(/_/g, " ")}</Badge>
-      </div>
+    <div className="flex h-[calc(100vh-theme(spacing.14)-theme(spacing.12))] -m-6">
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Messages tab — full height chat */}
+        {activeTab === "messages" && (
+          <div className="flex flex-col h-full">
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-3">
+                {messages.map((m) => {
+                  const isMine = m.sender_user_id === user?.id;
+                  return (
+                    <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[75%] px-3 py-2 rounded-2xl ${isMine ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}>
+                        <p className="text-sm whitespace-pre-wrap">{m.message}</p>
+                        <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/70 text-right" : "text-muted-foreground"}`}>{new Date(m.created_at).toLocaleString()}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
+            {!isLocked && (
+              <div className="border-t p-3 flex gap-2 shrink-0 bg-background">
+                <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === "Enter" && sendMessage()} className="flex-1" />
+                <Button onClick={sendMessage} size="icon"><Send className="h-4 w-4" /></Button>
+              </div>
+            )}
+          </div>
+        )}
 
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="summary">Summary</TabsTrigger>
-          <TabsTrigger value="messages" className="relative gap-1.5">
-            Messages
-            {unreadMessages > 0 && <span className="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-destructive text-destructive-foreground text-xs font-semibold px-1">+{unreadMessages}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="questions" className="relative gap-1.5">
-            Q&A
-            {unreadQuestions > 0 && <span className="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-destructive text-destructive-foreground text-xs font-semibold px-1">+{unreadQuestions}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="payments" className="relative gap-1.5">
-            Payments
-            {unreadPayments > 0 && <span className="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-destructive text-destructive-foreground text-xs font-semibold px-1">+{unreadPayments}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="deliverables">Deliverables</TabsTrigger>
-          {role === "client" && <TabsTrigger value="disputes">Disputes</TabsTrigger>}
-        </TabsList>
-
-        <TabsContent value="summary">
-          <Card>
-            <CardContent className="p-6 space-y-3 text-sm">
+        {/* Summary tab */}
+        {activeTab === "summary" && (
+          <ScrollArea className="flex-1 p-6">
+            <div className="space-y-3 text-sm">
               <p><span className="text-muted-foreground">Details:</span> {job.business_details}</p>
               <p><span className="text-muted-foreground">Payment:</span> {job.payment_method.replace(/_/g, " ")}</p>
               {job.army_deposit_amount && <p><span className="text-muted-foreground">Army Deposit:</span> ₪{job.army_deposit_amount}</p>}
@@ -211,42 +224,14 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
               {role === "provider" && job.status === "in_progress" && !isLocked && (
                 <Button onClick={markWaitingApproval}>Mark as Waiting for Approval</Button>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </ScrollArea>
+        )}
 
-        <TabsContent value="messages">
-          <Card>
-            <CardContent className="p-4">
-              <ScrollArea className="h-80 mb-4">
-                <div className="space-y-3 p-1">
-                  {messages.map((m) => {
-                    const isMine = m.sender_user_id === user?.id;
-                    return (
-                      <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                        <div className={`max-w-[75%] px-3 py-2 rounded-2xl ${isMine ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}>
-                          <p className="text-sm whitespace-pre-wrap">{m.message}</p>
-                          <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/70 text-right" : "text-muted-foreground"}`}>{new Date(m.created_at).toLocaleString()}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
-              {!isLocked && (
-                <div className="flex gap-2">
-                  <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === "Enter" && sendMessage()} />
-                  <Button onClick={sendMessage}><Send className="h-4 w-4" /></Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="questions">
-          <Card>
-            <CardContent className="p-4 space-y-4">
+        {/* Q&A tab */}
+        {activeTab === "questions" && (
+          <ScrollArea className="flex-1 p-6">
+            <div className="space-y-4">
               {questions.map((q) => (
                 <div key={q.id} className="border rounded-lg p-3">
                   <p className="font-medium text-sm">Q: {q.question}</p>
@@ -266,13 +251,14 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
                   <Button onClick={askQuestion}>Ask</Button>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </ScrollArea>
+        )}
 
-        <TabsContent value="payments">
-          <Card>
-            <CardContent className="p-4 space-y-4">
+        {/* Payments tab */}
+        {activeTab === "payments" && (
+          <ScrollArea className="flex-1 p-6">
+            <div className="space-y-4">
               {paymentRequests.map((pr) => (
                 <div key={pr.id} className="border rounded-lg p-3">
                   <div className="flex justify-between items-start">
@@ -298,36 +284,64 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
                   <Button onClick={createPaymentRequest}>Create Payment Request</Button>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="deliverables">
-          <DeliverableSection role={role} jobId={id!} deliverables={deliverables} isLocked={isLocked} onRefresh={fetchAll} />
-        </TabsContent>
-
-        {role === "client" && (
-          <TabsContent value="disputes">
-            <Card>
-              <CardContent className="p-4 space-y-4">
-                {disputes.map((d) => (
-                  <div key={d.id} className="border rounded-lg p-3">
-                    <p className="text-sm">{d.reason}</p>
-                    <Badge variant={d.status === "resolved" ? "default" : "destructive"} className="mt-1">{d.status}</Badge>
-                    {d.resolution && <p className="text-sm mt-2 text-muted-foreground">Resolution: {d.resolution}</p>}
-                  </div>
-                ))}
-                {!isLocked && (
-                  <div className="flex gap-2">
-                    <Textarea value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)} placeholder="Describe the issue..." />
-                    <Button onClick={openDispute} className="shrink-0"><AlertTriangle className="h-4 w-4 mr-1" />Open Dispute</Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+            </div>
+          </ScrollArea>
         )}
-      </Tabs>
+
+        {/* Deliverables tab */}
+        {activeTab === "deliverables" && (
+          <ScrollArea className="flex-1 p-6">
+            <DeliverableSection role={role} jobId={id!} deliverables={deliverables} isLocked={isLocked} onRefresh={fetchAll} />
+          </ScrollArea>
+        )}
+
+        {/* Disputes tab */}
+        {activeTab === "disputes" && role === "client" && (
+          <ScrollArea className="flex-1 p-6">
+            <div className="space-y-4">
+              {disputes.map((d) => (
+                <div key={d.id} className="border rounded-lg p-3">
+                  <p className="text-sm">{d.reason}</p>
+                  <Badge variant={d.status === "resolved" ? "default" : "destructive"} className="mt-1">{d.status}</Badge>
+                  {d.resolution && <p className="text-sm mt-2 text-muted-foreground">Resolution: {d.resolution}</p>}
+                </div>
+              ))}
+              {!isLocked && (
+                <div className="flex gap-2">
+                  <Textarea value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)} placeholder="Describe the issue..." />
+                  <Button onClick={openDispute} className="shrink-0"><AlertTriangle className="h-4 w-4 mr-1" />Open Dispute</Button>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        )}
+      </div>
+
+      {/* Right sidebar */}
+      <aside className="w-64 border-l bg-sidebar text-sidebar-foreground flex flex-col shrink-0">
+        <div className="p-4 border-b border-sidebar-border">
+          <h2 className="font-bold text-lg text-sidebar-primary truncate">{job.business_name}</h2>
+          <p className="text-sm text-muted-foreground truncate">{job.business_category}</p>
+          <Badge className="mt-2 text-xs">{job.status.replace(/_/g, " ")}</Badge>
+        </div>
+        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+          {navItems.map((item) => (
+            <button
+              key={item.key}
+              onClick={() => handleTabChange(item.key)}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === item.key ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}`}
+            >
+              <item.icon className="h-4 w-4 shrink-0" />
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.badge > 0 && (
+                <span className="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-destructive text-destructive-foreground text-xs font-semibold px-1">
+                  +{item.badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+      </aside>
     </div>
   );
 };
