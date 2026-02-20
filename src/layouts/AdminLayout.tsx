@@ -3,7 +3,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Bell, LogOut, LayoutDashboard, Users, Briefcase, FileText, AlertTriangle, Building2 } from "lucide-react";
-import NotificationBell from "@/components/NotificationBell";
+import HeaderActions from "@/components/HeaderActions";
 
 const navItems = [
   { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
@@ -44,7 +44,7 @@ const AdminLayout: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-14 border-b flex items-center justify-between px-6 shrink-0">
           <h2 className="text-lg font-semibold">{pageTitle}</h2>
-          <NotificationBell />
+          <HeaderActions />
         </header>
         <main className="flex-1 p-6 overflow-y-auto">
           <Outlet context={{ setPageTitle }} />

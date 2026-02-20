@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LogOut, LayoutDashboard, Layers, Briefcase } from "lucide-react";
-import NotificationBell from "@/components/NotificationBell";
+import HeaderActions from "@/components/HeaderActions";
 
 const navItems = [
   { label: "Dashboard", path: "/provider", icon: LayoutDashboard },
@@ -70,7 +70,7 @@ const ProviderLayout: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-14 border-b flex items-center justify-between px-6 shrink-0">
           <h2 className="text-lg font-semibold">{pageTitle}</h2>
-          <NotificationBell />
+          <HeaderActions />
         </header>
         <main className="flex-1 p-6 overflow-y-auto">
           <Outlet context={{ setPageTitle }} />
