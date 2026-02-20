@@ -168,7 +168,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
     { key: "messages", label: "Messages", icon: MessageSquare, badge: unreadMessages },
     { key: "questions", label: "Q&A", icon: HelpCircle, badge: unreadQuestions },
     { key: "payments", label: "Payments", icon: CreditCard, badge: unreadPayments },
-    { key: "deliverables", label: "Deliverables", icon: Package, badge: 0 },
+    { key: "deliverables", label: "Delivery", icon: Package, badge: 0 },
     ...(role === "client" ? [{ key: "disputes", label: "Disputes", icon: FileWarning, badge: 0 }] : []),
   ];
 
@@ -331,28 +331,48 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
 
       {/* Right sidebar */}
       <aside className="w-64 border-l bg-sidebar text-sidebar-foreground flex flex-col shrink-0">
-        <div className="p-4 border-b border-sidebar-border">
-          <h2 className="font-bold text-lg text-sidebar-primary truncate">{job.business_name}</h2>
-          <p className="text-sm text-muted-foreground truncate">{job.business_category}</p>
-          <Badge className="mt-2 text-xs">{job.status.replace(/_/g, " ")}</Badge>
+        {/* Company info — centered */}
+        <div className="px-4 pt-6 pb-4 flex flex-col items-center text-center">
+          <h2 className="font-bold text-lg text-sidebar-primary truncate max-w-full">{job.business_name}</h2>
+          <p className="text-sm text-muted-foreground truncate max-w-full">{job.business_category}</p>
         </div>
-        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
-            <button
-              key={item.key}
-              onClick={() => handleTabChange(item.key)}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === item.key ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}`}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">{item.label}</span>
-              {item.badge > 0 && (
-                <span className="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-destructive text-destructive-foreground text-xs font-semibold px-1">
-                  +{item.badge}
-                </span>
-              )}
-            </button>
-          ))}
+
+        {/* Nav grid */}
+        <nav className="flex-1 px-4 overflow-y-auto">
+          <div className="grid grid-cols-2 gap-3">
+            {navItems.map((item) => (
+              <button
+                key={item.key}
+                onClick={() => handleTabChange(item.key)}
+                className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl p-4 text-sm font-medium transition-colors border ${activeTab === item.key ? "bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-border shadow-sm" : "bg-background text-sidebar-foreground border-border hover:bg-sidebar-accent/50"}`}
+              >
+                <item.icon className="h-5 w-5" />
+                <span>{item.label}</span>
+                {item.badge > 0 && (
+                  <span className="absolute top-1.5 right-1.5 inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold px-1">
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </nav>
+
+        {/* Status badge at bottom */}
+        <div className="p-4 flex justify-center">
+          <Badge
+            variant="outline"
+            className={`text-xs px-4 py-1.5 rounded-full capitalize ${
+              job.status === "done" ? "border-green-500 text-green-600 bg-green-50" :
+              job.status === "in_progress" ? "border-yellow-500 text-yellow-600 bg-yellow-50" :
+              job.status === "waiting_for_client_approval" ? "border-blue-500 text-blue-600 bg-blue-50" :
+              job.status === "closed_by_admin" ? "border-destructive text-destructive bg-destructive/10" :
+              "border-muted-foreground text-muted-foreground"
+            }`}
+          >
+            {job.status.replace(/_/g, " ")}
+          </Badge>
+        </div>
       </aside>
     </div>
   );
