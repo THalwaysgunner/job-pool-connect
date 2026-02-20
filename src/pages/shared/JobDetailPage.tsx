@@ -332,7 +332,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
       {/* Right sidebar */}
       <aside className="w-64 border-l bg-sidebar text-sidebar-foreground flex flex-col shrink-0">
         {/* Company info — centered */}
-        <div className="px-4 pt-6 pb-4 flex flex-col items-center text-center">
+        <div className="px-4 pt-6 pb-4 flex flex-col items-center text-center border-b border-sidebar-border">
           <h2 className="font-bold text-lg text-sidebar-primary truncate max-w-full">{job.business_name}</h2>
           <p className="text-sm text-muted-foreground truncate max-w-full">{job.business_category}</p>
         </div>
