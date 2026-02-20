@@ -210,7 +210,12 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
                 {messages.map((m, idx) => {
                   const isMine = m.sender_user_id === user?.id;
                   const msgDate = new Date(m.created_at);
-                  const dateStr = msgDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+                  const today = new Date();
+                  const yesterday = new Date();
+                  yesterday.setDate(today.getDate() - 1);
+                  const isToday = msgDate.toDateString() === today.toDateString();
+                  const isYesterday = msgDate.toDateString() === yesterday.toDateString();
+                  const dateStr = isToday ? "Today" : isYesterday ? "Yesterday" : msgDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
                   const timeStr = msgDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
                   const prevDate = idx > 0 ? new Date(messages[idx - 1].created_at).toDateString() : null;
                   const showDateSep = idx === 0 || msgDate.toDateString() !== prevDate;
@@ -220,30 +225,23 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
                   return (
                     <React.Fragment key={m.id}>
                       {showDateSep && (
-                        <div className="flex items-center justify-center my-4">
-                          <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">{dateStr}</span>
+                        <div className="flex items-center my-4 gap-3">
+                          <div className="flex-1 h-px bg-border" />
+                          <span className="text-xs text-muted-foreground border border-border px-3 py-1 rounded-full shrink-0">{dateStr}</span>
+                          <div className="flex-1 h-px bg-border" />
                         </div>
                       )}
-                      <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                        {!isMine && (
-                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground shrink-0 mt-1 mr-2">
-                            {initials}
-                          </div>
-                        )}
-                        <div className="flex flex-col max-w-[75%]">
-                          <div className={`flex items-baseline gap-2 mb-0.5 ${isMine ? "justify-end" : ""}`}>
-                            <span className={`text-xs font-semibold ${isMine ? "text-[#0865ff]" : "text-foreground"}`}>{profile?.full_name || "Unknown"}</span>
-                            <span className="text-[10px] text-muted-foreground">{timeStr}</span>
-                          </div>
-                          <div className={`px-3 py-2 rounded-2xl ${isMine ? "bg-[#0865ff] text-white rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}>
-                            <p className="text-sm whitespace-pre-wrap">{m.message}</p>
-                          </div>
+                      <div className="flex items-start gap-2 py-1">
+                        <div className={`h-9 w-9 rounded-lg shrink-0 flex items-center justify-center text-xs font-semibold ${isMine ? "bg-[#0865ff]/20 text-[#0865ff]" : "bg-muted text-muted-foreground"}`}>
+                          {initials}
                         </div>
-                        {isMine && (
-                          <div className="h-8 w-8 rounded-full bg-[#0865ff]/20 flex items-center justify-center text-xs font-semibold text-[#0865ff] shrink-0 mt-1 ml-2">
-                            {initials}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2">
+                            <span className={`text-sm font-bold ${isMine ? "text-[#0865ff]" : "text-foreground"}`}>{profile?.full_name || "Unknown"}</span>
+                            <span className="text-[11px] text-muted-foreground">{timeStr}</span>
                           </div>
-                        )}
+                          <p className="text-sm whitespace-pre-wrap text-foreground">{m.message}</p>
+                        </div>
                       </div>
                     </React.Fragment>
                   );
