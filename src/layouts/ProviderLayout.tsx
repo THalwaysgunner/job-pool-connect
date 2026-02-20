@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,14 +9,15 @@ import { LogOut, LayoutDashboard, Layers, Briefcase } from "lucide-react";
 import HeaderActions from "@/components/HeaderActions";
 
 const navItems = [
-  { label: "Dashboard", path: "/provider", icon: LayoutDashboard },
-  { label: "Job Pool", path: "/provider/pool", icon: Layers },
-  { label: "My Jobs", path: "/provider/jobs", icon: Briefcase },
+  { labelKey: "nav.dashboard", path: "/provider", icon: LayoutDashboard },
+  { labelKey: "nav.jobPool", path: "/provider/pool", icon: Layers },
+  { labelKey: "nav.myJobs", path: "/provider/jobs", icon: Briefcase },
 ];
 
 const ProviderLayout: React.FC = () => {
   const [pageTitle, setPageTitle] = useState("");
   const { signOut } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
   const [poolCount, setPoolCount] = useState(0);
 
@@ -42,18 +44,18 @@ const ProviderLayout: React.FC = () => {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <aside className="w-64 border-r bg-sidebar text-sidebar-foreground flex flex-col shrink-0">
+      <aside className="w-64 border-e bg-sidebar text-sidebar-foreground flex flex-col shrink-0">
         <div className="h-14 flex items-center px-4 border-b border-sidebar-border shrink-0">
-          <h1 className="text-lg font-bold text-sidebar-primary">Provider Panel</h1>
+          <h1 className="text-lg font-bold text-sidebar-primary">{t("provider.panel")}</h1>
         </div>
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <Link key={item.path} to={item.path}>
               <Button variant={location.pathname === item.path ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                 <item.icon className="h-4 w-4" />
-                {item.label}
+                {t(item.labelKey)}
                 {item.path === "/provider/pool" && poolCount > 0 && (
-                  <Badge variant="destructive" className="ml-auto h-5 min-w-5 flex items-center justify-center p-0 text-xs">
+                  <Badge variant="destructive" className="ms-auto h-5 min-w-5 flex items-center justify-center p-0 text-xs">
                     {poolCount}
                   </Badge>
                 )}
@@ -63,7 +65,7 @@ const ProviderLayout: React.FC = () => {
         </nav>
         <div className="p-4 border-t border-sidebar-border">
           <Button variant="ghost" className="w-full justify-start gap-2" onClick={signOut}>
-            <LogOut className="h-4 w-4" /> Sign Out
+            <LogOut className="h-4 w-4" /> {t("nav.signOut")}
           </Button>
         </div>
       </aside>

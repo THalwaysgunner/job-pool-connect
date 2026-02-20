@@ -1,43 +1,45 @@
 import React, { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { Bell, LogOut, LayoutDashboard, Users, Briefcase, FileText, AlertTriangle, Building2 } from "lucide-react";
+import { LogOut, LayoutDashboard, Users, Briefcase, FileText, AlertTriangle, Building2 } from "lucide-react";
 import HeaderActions from "@/components/HeaderActions";
 
 const navItems = [
-  { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
-  { label: "Users", path: "/admin/users", icon: Users },
-  { label: "Jobs", path: "/admin/jobs", icon: Briefcase },
-  { label: "Companies", path: "/admin/companies", icon: Building2 },
-  { label: "Legal Files", path: "/admin/legal", icon: FileText },
-  { label: "Alerts", path: "/admin/alerts", icon: AlertTriangle },
+  { labelKey: "nav.dashboard", path: "/admin", icon: LayoutDashboard },
+  { labelKey: "nav.users", path: "/admin/users", icon: Users },
+  { labelKey: "nav.jobs", path: "/admin/jobs", icon: Briefcase },
+  { labelKey: "nav.companies", path: "/admin/companies", icon: Building2 },
+  { labelKey: "nav.legalFiles", path: "/admin/legal", icon: FileText },
+  { labelKey: "nav.alerts", path: "/admin/alerts", icon: AlertTriangle },
 ];
 
 const AdminLayout: React.FC = () => {
   const [pageTitle, setPageTitle] = useState("");
   const { signOut } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <aside className="w-64 border-r bg-sidebar text-sidebar-foreground flex flex-col shrink-0">
+      <aside className="w-64 border-e bg-sidebar text-sidebar-foreground flex flex-col shrink-0">
         <div className="h-14 flex items-center px-4 border-b border-sidebar-border shrink-0">
-          <h1 className="text-lg font-bold text-sidebar-primary">Admin Panel</h1>
+          <h1 className="text-lg font-bold text-sidebar-primary">{t("admin.panel")}</h1>
         </div>
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <Link key={item.path} to={item.path}>
               <Button variant={location.pathname === item.path ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                 <item.icon className="h-4 w-4" />
-                {item.label}
+                {t(item.labelKey)}
               </Button>
             </Link>
           ))}
         </nav>
         <div className="p-4 border-t border-sidebar-border">
           <Button variant="ghost" className="w-full justify-start gap-2" onClick={signOut}>
-            <LogOut className="h-4 w-4" /> Sign Out
+            <LogOut className="h-4 w-4" /> {t("nav.signOut")}
           </Button>
         </div>
       </aside>
