@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { Check, X, Eye, FileText } from "lucide-react";
 
@@ -19,6 +21,7 @@ const AdminCompanies: React.FC = () => {
   const [viewingDoc, setViewingDoc] = useState<any>(null);
   const [rejectDocDialog, setRejectDocDialog] = useState<{ open: boolean; docId: string | null }>({ open: false, docId: null });
   const [rejectReason, setRejectReason] = useState("");
+  const [rejectCategory, setRejectCategory] = useState("");
   const [rejectCompanyDialog, setRejectCompanyDialog] = useState<{ open: boolean; companyId: string | null }>({ open: false, companyId: null });
   const [rejectCompanyReason, setRejectCompanyReason] = useState("");
   const { toast } = useToast();
@@ -62,12 +65,48 @@ const AdminCompanies: React.FC = () => {
     setViewingDoc(null);
   };
 
+  const rejectCategories = [
+    { value: "not_clear", label: "Not clear / unreadable", requiresReupload: true },
+    { value: "wrong_document", label: "Wrong document type", requiresReupload: true },
+    { value: "expired", label: "Expired document", requiresReupload: true },
+    { value: "incomplete", label: "Incomplete / missing info", requiresReupload: true },
+    { value: "fraudulent", label: "Suspected fraud", requiresReupload: false },
+    { value: "other", label: "Other", requiresReupload: false },
+  ];
+
   const rejectDoc = async () => {
-    if (!rejectDocDialog.docId) return;
-    await supabase.from("company_documents").update({ status: "rejected", rejection_reason: rejectReason } as any).eq("id", rejectDocDialog.docId);
+    if (!rejectDocDialog.docId || !rejectCategory) return;
+    const category = rejectCategories.find(c => c.value === rejectCategory);
+    const fullReason = `[${category?.label}] ${rejectReason}`.trim();
+
+    if (category?.requiresReupload) {
+      // Delete file from storage and remove record so client must re-upload
+      const doc = companyDocs.find(d => d.id === rejectDocDialog.docId);
+      if (doc) {
+        await supabase.storage.from("company-documents").remove([doc.file_path]);
+        await supabase.from("company_documents").delete().eq("id", rejectDocDialog.docId);
+      }
+    } else {
+      await supabase.from("company_documents").update({ status: "rejected", rejection_reason: fullReason } as any).eq("id", rejectDocDialog.docId);
+    }
+
+    // Notify the client
+    if (detailDialog.company) {
+      const doc = companyDocs.find(d => d.id === rejectDocDialog.docId);
+      await supabase.functions.invoke("create-notification", {
+        body: {
+          user_id: detailDialog.company.client_user_id,
+          title: category?.requiresReupload ? "Document Rejected - Re-upload Required" : "Document Rejected",
+          message: `Your document "${doc?.file_name}" (${doc?.doc_type.replace(/_/g, " ")}) was rejected. Reason: ${fullReason}.${category?.requiresReupload ? " Please upload a new document." : ""}`,
+          link: "/client/settings",
+        },
+      });
+    }
+
     toast({ title: "Document rejected" });
     setRejectDocDialog({ open: false, docId: null });
     setRejectReason("");
+    setRejectCategory("");
     if (detailDialog.company) {
       const { data: docs } = await supabase.from("company_documents").select("*").eq("company_id", detailDialog.company.id);
       if (docs) setCompanyDocs(docs);
@@ -280,11 +319,27 @@ const AdminCompanies: React.FC = () => {
       </Dialog>
 
       {/* Reject Doc Dialog */}
-      <Dialog open={rejectDocDialog.open} onOpenChange={(o) => setRejectDocDialog({ ...rejectDocDialog, open: o })}>
+      <Dialog open={rejectDocDialog.open} onOpenChange={(o) => { setRejectDocDialog({ ...rejectDocDialog, open: o }); if (!o) { setRejectReason(""); setRejectCategory(""); } }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Reject Document</DialogTitle></DialogHeader>
           <Textarea placeholder="Reason for rejecting this document..." value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
-          <Button variant="destructive" onClick={rejectDoc}>Reject Document</Button>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Rejection Category</Label>
+            <RadioGroup value={rejectCategory} onValueChange={setRejectCategory}>
+              {rejectCategories.map((cat) => (
+                <div key={cat.value} className="flex items-center space-x-2">
+                  <RadioGroupItem value={cat.value} id={cat.value} />
+                  <Label htmlFor={cat.value} className="text-sm font-normal cursor-pointer">
+                    {cat.label}
+                    {cat.requiresReupload && (
+                      <span className="text-xs text-muted-foreground ml-1">(client must re-upload)</span>
+                    )}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
+          <Button variant="destructive" onClick={rejectDoc} disabled={!rejectCategory}>Reject Document</Button>
         </DialogContent>
       </Dialog>
 
