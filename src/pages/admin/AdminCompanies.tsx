@@ -16,6 +16,7 @@ const AdminCompanies: React.FC = () => {
   const [companyProfile, setCompanyProfile] = useState<any>(null);
   const [docViewUrl, setDocViewUrl] = useState<string | null>(null);
   const [docViewOpen, setDocViewOpen] = useState(false);
+  const [viewingDoc, setViewingDoc] = useState<any>(null);
   const [rejectDocDialog, setRejectDocDialog] = useState<{ open: boolean; docId: string | null }>({ open: false, docId: null });
   const [rejectReason, setRejectReason] = useState("");
   const [rejectCompanyDialog, setRejectCompanyDialog] = useState<{ open: boolean; companyId: string | null }>({ open: false, companyId: null });
@@ -44,6 +45,7 @@ const AdminCompanies: React.FC = () => {
       return;
     }
     if (data?.signedUrl) {
+      setViewingDoc(doc);
       setDocViewUrl(data.signedUrl);
       setDocViewOpen(true);
     }
@@ -52,11 +54,11 @@ const AdminCompanies: React.FC = () => {
   const approveDoc = async (docId: string) => {
     await supabase.from("company_documents").update({ status: "approved", rejection_reason: null } as any).eq("id", docId);
     toast({ title: "Document approved" });
-    // Refresh docs
     if (detailDialog.company) {
       const { data: docs } = await supabase.from("company_documents").select("*").eq("company_id", detailDialog.company.id);
       if (docs) setCompanyDocs(docs);
     }
+    if (viewingDoc?.id === docId) setViewingDoc({ ...viewingDoc, status: "approved", rejection_reason: null });
   };
 
   const rejectDoc = async () => {
@@ -69,6 +71,7 @@ const AdminCompanies: React.FC = () => {
       const { data: docs } = await supabase.from("company_documents").select("*").eq("company_id", detailDialog.company.id);
       if (docs) setCompanyDocs(docs);
     }
+    if (viewingDoc?.id === rejectDocDialog.docId) setViewingDoc({ ...viewingDoc, status: "rejected", rejection_reason: rejectReason });
   };
 
   const approveCompany = async (id: string) => {
@@ -100,10 +103,10 @@ const AdminCompanies: React.FC = () => {
     fetchCompanies();
   };
 
-  const docStatusVariant = (s: string) => {
-    if (s === "approved") return "default";
-    if (s === "rejected") return "destructive";
-    return "secondary";
+  const docStatusBadge = (s: string) => {
+    if (s === "approved") return <Badge className="bg-green-600 hover:bg-green-700 text-white">approved</Badge>;
+    if (s === "rejected") return <Badge className="bg-red-600 hover:bg-red-700 text-white">rejected</Badge>;
+    return <Badge className="bg-gray-400 hover:bg-gray-500 text-white">pending</Badge>;
   };
 
   const statusVariant = (s: string) => {
@@ -216,7 +219,7 @@ const AdminCompanies: React.FC = () => {
                                 <p className="text-xs text-muted-foreground">{doc.doc_type.replace(/_/g, " ")}</p>
                               </div>
                             </div>
-                            <Badge variant={docStatusVariant((doc as any).status) as any}>{(doc as any).status}</Badge>
+                            {docStatusBadge((doc as any).status)}
                           </div>
                           {(doc as any).status === "rejected" && (doc as any).rejection_reason && (
                             <p className="text-xs text-destructive">Reason: {(doc as any).rejection_reason}</p>
@@ -225,20 +228,6 @@ const AdminCompanies: React.FC = () => {
                             <Button size="sm" variant="outline" onClick={() => viewDoc(doc)}>
                               <Eye className="h-3 w-3 mr-1" />View
                             </Button>
-                            {detailDialog.company.status === "submitted_for_approval" && (
-                              <>
-                                {(doc as any).status !== "approved" && (
-                                  <Button size="sm" onClick={() => approveDoc(doc.id)}>
-                                    <Check className="h-3 w-3 mr-1" />Approve
-                                  </Button>
-                                )}
-                                {(doc as any).status !== "rejected" && (
-                                  <Button size="sm" variant="destructive" onClick={() => { setRejectDocDialog({ open: true, docId: doc.id }); setRejectReason(""); }}>
-                                    <X className="h-3 w-3 mr-1" />Reject
-                                  </Button>
-                                )}
-                              </>
-                            )}
                           </div>
                         </div>
                       ))}
@@ -264,11 +253,24 @@ const AdminCompanies: React.FC = () => {
       </Dialog>
 
       {/* Doc View Dialog */}
-      <Dialog open={docViewOpen} onOpenChange={setDocViewOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader><DialogTitle>Document Preview</DialogTitle></DialogHeader>
+      <Dialog open={docViewOpen} onOpenChange={(o) => { setDocViewOpen(o); if (!o) setViewingDoc(null); }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between">
+            <DialogHeader><DialogTitle>Document Preview</DialogTitle></DialogHeader>
+            {viewingDoc && docStatusBadge((viewingDoc as any).status)}
+          </div>
+          {viewingDoc && (
+            <div className="flex gap-2">
+              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => approveDoc(viewingDoc.id)}>
+                <Check className="h-3 w-3 mr-1" />Approve
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => { setRejectDocDialog({ open: true, docId: viewingDoc.id }); setRejectReason(""); }}>
+                <X className="h-3 w-3 mr-1" />Reject
+              </Button>
+            </div>
+          )}
           {docViewUrl && (
-            <iframe src={docViewUrl} className="w-full h-[70vh] border rounded" title="Document preview" />
+            <iframe src={docViewUrl} className="w-full flex-1 min-h-[60vh] border rounded" title="Document preview" />
           )}
         </DialogContent>
       </Dialog>
