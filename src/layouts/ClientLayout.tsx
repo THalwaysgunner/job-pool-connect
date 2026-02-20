@@ -2,13 +2,13 @@ import React from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Building2, Briefcase, PlusCircle } from "lucide-react";
+import { LogOut, LayoutDashboard, Briefcase, Settings } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 
 const navItems = [
   { label: "Dashboard", path: "/client", icon: LayoutDashboard },
-  { label: "My Company", path: "/client/company", icon: Building2 },
   { label: "My Jobs", path: "/client/jobs", icon: Briefcase },
+  { label: "Settings", path: "/client/settings", icon: Settings },
 ];
 
 const ClientLayout: React.FC = () => {
@@ -24,7 +24,7 @@ const ClientLayout: React.FC = () => {
         <nav className="flex-1 p-2 space-y-1">
           {navItems.map((item) => (
             <Link key={item.path} to={item.path}>
-              <Button variant={location.pathname === item.path ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+              <Button variant={location.pathname.startsWith(item.path) && (item.path !== "/client" || location.pathname === "/client") ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                 <item.icon className="h-4 w-4" />
                 {item.label}
               </Button>

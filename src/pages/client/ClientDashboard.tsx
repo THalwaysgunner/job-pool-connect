@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Briefcase, Building2, PlusCircle } from "lucide-react";
+import { Briefcase, PlusCircle } from "lucide-react";
 
 const ClientDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -23,7 +23,7 @@ const ClientDashboard: React.FC = () => {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Client Dashboard</h2>
+        <h2 className="text-2xl font-bold">Dashboard</h2>
         {canCreateJob && (
           <Link to="/client/jobs/new">
             <Button><PlusCircle className="h-4 w-4 mr-2" />New Job</Button>
@@ -31,29 +31,7 @@ const ClientDashboard: React.FC = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Company Status</CardTitle>
-            <Building2 className="h-5 w-5 text-primary" />
-          </CardHeader>
-          <CardContent>
-            {company ? (
-              <div>
-                <p className="text-lg font-semibold">{company.business_name}</p>
-                <Badge variant={company.status === "approved" ? "default" : "secondary"}>{company.status.replace(/_/g, " ")}</Badge>
-                {company.status === "rejected" && company.rejection_reason && (
-                  <p className="text-sm text-destructive mt-2">{company.rejection_reason}</p>
-                )}
-              </div>
-            ) : (
-              <div>
-                <p className="text-muted-foreground">No company registered</p>
-                <Link to="/client/company"><Button size="sm" variant="outline" className="mt-2">Register Company</Button></Link>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Jobs</CardTitle>
@@ -61,12 +39,25 @@ const ClientDashboard: React.FC = () => {
           </CardHeader>
           <CardContent><div className="text-3xl font-bold">{jobs.length}</div></CardContent>
         </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">In Progress</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold">{jobs.filter(j => j.status === "in_progress").length}</div></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold">{jobs.filter(j => j.status === "done").length}</div></CardContent>
+        </Card>
       </div>
 
-      {!canCreateJob && company && company.status !== "approved" && (
-        <Card className="border-dashed">
+      {!canCreateJob && (
+        <Card className="border-dashed mb-6">
           <CardContent className="p-4 text-center text-muted-foreground">
-            Your company must be approved before you can create jobs.
+            {!company
+              ? <>You need to register a company first. Go to <Link to="/client/settings" className="text-primary underline">Settings → Company</Link> to get started.</>
+              : company.status !== "approved"
+                ? <>Your company is pending approval. You can create jobs once it's approved.</>
+                : null
+            }
           </CardContent>
         </Card>
       )}
