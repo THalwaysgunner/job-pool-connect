@@ -44,12 +44,13 @@ const NotificationBell: React.FC = () => {
   };
 
   const handleNotificationClick = async (n: any) => {
+    // Mark as read immediately in local state for instant feedback
     if (!n.is_read) {
+      setNotifications((prev) => prev.map((notif) => notif.id === n.id ? { ...notif, is_read: true } : notif));
       await supabase.from("notifications").update({ is_read: true }).eq("id", n.id);
-      fetchNotifications();
     }
-    setOpen(false);
     if (n.link) {
+      setOpen(false);
       navigate(n.link);
     }
   };
@@ -79,8 +80,11 @@ const NotificationBell: React.FC = () => {
           ) : (
             notifications.map((n) => (
               <div key={n.id} onClick={() => handleNotificationClick(n)} className={`p-3 border-b last:border-0 cursor-pointer hover:bg-accent/80 transition-colors ${!n.is_read ? "bg-accent/50" : ""}`}>
-                <p className="text-sm font-medium">{n.title}</p>
-                <p className="text-xs text-muted-foreground">{n.message}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-medium">{n.title}</p>
+                  {!n.is_read && <span className="mt-1.5 h-2 w-2 rounded-full bg-[#0865ff] shrink-0" />}
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap break-words">{n.message}</p>
                 <p className="text-xs text-muted-foreground mt-1">{formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</p>
               </div>
             ))

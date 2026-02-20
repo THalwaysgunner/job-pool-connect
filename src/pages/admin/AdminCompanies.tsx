@@ -63,6 +63,7 @@ const AdminCompanies: React.FC = () => {
     }
     setDocViewOpen(false);
     setViewingDoc(null);
+    fetchCompanies();
   };
 
   const rejectCategories = [
@@ -105,6 +106,7 @@ const AdminCompanies: React.FC = () => {
     }
     setDocViewOpen(false);
     setViewingDoc(null);
+    fetchCompanies();
   };
 
   const approveCompany = async (id: string) => {
