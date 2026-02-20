@@ -30,10 +30,11 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
   const [newPR, setNewPR] = useState({ title: "", amount: "", details: "" });
   const [disputeReason, setDisputeReason] = useState("");
   const [activeTab, setActiveTab] = useState("summary");
-  const [seenMessages, setSeenMessages] = useState(0);
-  const [seenQuestions, setSeenQuestions] = useState(0);
-  const [seenPayments, setSeenPayments] = useState(0);
+  const [seenMessages, setSeenMessages] = useState<number | null>(null);
+  const [seenQuestions, setSeenQuestions] = useState<number | null>(null);
+  const [seenPayments, setSeenPayments] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const initializedRef = useRef(false);
 
   const fetchAll = async () => {
     if (!id) return;
@@ -53,32 +54,41 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
     if (d.data) setDeliverables(d.data);
     if (dis.data) setDisputes(dis.data);
     if (docs.data) setJobDocs(docs.data);
+
+    // Initialize seen counts on first load only
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      setSeenMessages(m.data?.length ?? 0);
+      setSeenQuestions(q.data?.length ?? 0);
+      setSeenPayments(pr.data?.length ?? 0);
+    }
   };
 
   useEffect(() => { fetchAll(); }, [id]);
 
-  // Initialize seen counts on first load
-  useEffect(() => {
-    if (messages.length > 0 && seenMessages === 0) setSeenMessages(messages.length);
-  }, [messages.length > 0]);
-  useEffect(() => {
-    if (questions.length > 0 && seenQuestions === 0) setSeenQuestions(questions.length);
-  }, [questions.length > 0]);
-  useEffect(() => {
-    if (paymentRequests.length > 0 && seenPayments === 0) setSeenPayments(paymentRequests.length);
-  }, [paymentRequests.length > 0]);
-
-  // Mark as seen when switching to tab
-  useEffect(() => {
-    if (activeTab === "messages") setSeenMessages(messages.length);
-    if (activeTab === "questions") setSeenQuestions(questions.length);
-    if (activeTab === "payments") setSeenPayments(paymentRequests.length);
-  }, [activeTab, messages.length, questions.length, paymentRequests.length]);
+  // Mark as seen only when user switches TO a tab
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (tab === "messages") setSeenMessages(messages.length);
+    if (tab === "questions") setSeenQuestions(questions.length);
+    if (tab === "payments") setSeenPayments(paymentRequests.length);
+  };
 
   // Auto-scroll messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
+
+  // Also mark seen if user is already on the tab and sends their own message
+  useEffect(() => {
+    if (activeTab === "messages") setSeenMessages(messages.length);
+  }, [messages.length]);
+  useEffect(() => {
+    if (activeTab === "questions") setSeenQuestions(questions.length);
+  }, [questions.length]);
+  useEffect(() => {
+    if (activeTab === "payments") setSeenPayments(paymentRequests.length);
+  }, [paymentRequests.length]);
 
   // Realtime for messages, questions, payments, deliverables
   useEffect(() => {
@@ -93,9 +103,9 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
     return () => { supabase.removeChannel(ch); };
   }, [id]);
 
-  const unreadMessages = Math.max(0, messages.length - seenMessages);
-  const unreadQuestions = Math.max(0, questions.length - seenQuestions);
-  const unreadPayments = Math.max(0, paymentRequests.length - seenPayments);
+  const unreadMessages = seenMessages !== null ? Math.max(0, messages.length - seenMessages) : 0;
+  const unreadQuestions = seenQuestions !== null ? Math.max(0, questions.length - seenQuestions) : 0;
+  const unreadPayments = seenPayments !== null ? Math.max(0, paymentRequests.length - seenPayments) : 0;
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !user || !id) return;
@@ -161,20 +171,20 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
         <Badge className="text-sm">{job.status.replace(/_/g, " ")}</Badge>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="mb-4">
           <TabsTrigger value="summary">Summary</TabsTrigger>
-          <TabsTrigger value="messages" className="relative">
+          <TabsTrigger value="messages" className="relative gap-1.5">
             Messages
-            {unreadMessages > 0 && <Badge variant="destructive" className="ml-1.5 h-5 min-w-5 flex items-center justify-center p-0 text-xs">+{unreadMessages}</Badge>}
+            {unreadMessages > 0 && <span className="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-destructive text-destructive-foreground text-xs font-semibold px-1">+{unreadMessages}</span>}
           </TabsTrigger>
-          <TabsTrigger value="questions" className="relative">
+          <TabsTrigger value="questions" className="relative gap-1.5">
             Q&A
-            {unreadQuestions > 0 && <Badge variant="destructive" className="ml-1.5 h-5 min-w-5 flex items-center justify-center p-0 text-xs">+{unreadQuestions}</Badge>}
+            {unreadQuestions > 0 && <span className="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-destructive text-destructive-foreground text-xs font-semibold px-1">+{unreadQuestions}</span>}
           </TabsTrigger>
-          <TabsTrigger value="payments" className="relative">
+          <TabsTrigger value="payments" className="relative gap-1.5">
             Payments
-            {unreadPayments > 0 && <Badge variant="destructive" className="ml-1.5 h-5 min-w-5 flex items-center justify-center p-0 text-xs">+{unreadPayments}</Badge>}
+            {unreadPayments > 0 && <span className="inline-flex items-center justify-center h-5 min-w-5 rounded-full bg-destructive text-destructive-foreground text-xs font-semibold px-1">+{unreadPayments}</span>}
           </TabsTrigger>
           <TabsTrigger value="deliverables">Deliverables</TabsTrigger>
           {role === "client" && <TabsTrigger value="disputes">Disputes</TabsTrigger>}
