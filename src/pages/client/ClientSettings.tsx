@@ -28,6 +28,8 @@ const ClientSettings: React.FC = () => {
   const [passwordForm, setPasswordForm] = useState({ password: "", confirm: "" });
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [idFile, setIdFile] = useState<string | null>(null);
+  const [uploadingId, setUploadingId] = useState(false);
 
   // Company state
   const [company, setCompany] = useState<any>(null);
