@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, MessageSquare, Smile } from "lucide-react";
+import { Send, MessageSquare, Smile, Pencil, Trash2, X, Check } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const EMOJI_OPTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏", "🔥", "👏"];
@@ -33,6 +33,8 @@ const MessageItem: React.FC<MessageItemProps> = ({
   const [showReplies, setShowReplies] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [hovered, setHovered] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(message.message);
 
   const isMine = message.sender_user_id === user?.id;
   const profile = senderProfiles[message.sender_user_id];
@@ -84,6 +86,18 @@ const MessageItem: React.FC<MessageItemProps> = ({
     onRefresh();
   };
 
+  const saveEdit = async () => {
+    if (!editText.trim()) return;
+    await supabase.from("job_messages").update({ message: editText }).eq("id", message.id);
+    setEditing(false);
+    onRefresh();
+  };
+
+  const deleteMessage = async () => {
+    await supabase.from("job_messages").delete().eq("id", message.id);
+    onRefresh();
+  };
+
   const lastReply = replies.length > 0 ? replies[replies.length - 1] : null;
   const lastReplyProfile = lastReply ? senderProfiles[lastReply.sender_user_id] : null;
   const lastReplyInitials = lastReplyProfile?.full_name
@@ -96,8 +110,8 @@ const MessageItem: React.FC<MessageItemProps> = ({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Main message row */}
-      <div className="flex items-start gap-2 py-1 px-4 hover:bg-muted/40 transition-colors">
+      {/* Main message row — full width hover */}
+      <div className="flex items-start gap-2 py-2 px-4 hover:bg-muted/40 transition-colors">
         <div
           className={`h-9 w-9 rounded-lg shrink-0 flex items-center justify-center text-xs font-semibold ${
             isMine ? "bg-[#0865ff]/20 text-[#0865ff]" : "bg-muted text-muted-foreground"
@@ -112,7 +126,25 @@ const MessageItem: React.FC<MessageItemProps> = ({
             </span>
             <span className="text-[11px] text-muted-foreground">{timeStr}</span>
           </div>
-          <p className="text-sm whitespace-pre-wrap text-foreground">{message.message}</p>
+
+          {editing ? (
+            <div className="flex items-center gap-2 mt-1">
+              <Input
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                className="h-8 text-sm flex-1"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveEdit();
+                  if (e.key === "Escape") { setEditing(false); setEditText(message.message); }
+                }}
+                autoFocus
+              />
+              <button onClick={saveEdit} className="p-1 rounded hover:bg-muted text-green-600"><Check className="h-4 w-4" /></button>
+              <button onClick={() => { setEditing(false); setEditText(message.message); }} className="p-1 rounded hover:bg-muted text-muted-foreground"><X className="h-4 w-4" /></button>
+            </div>
+          ) : (
+            <p className="text-sm whitespace-pre-wrap text-foreground">{message.message}</p>
+          )}
 
           {/* Reactions display */}
           {Object.keys(reactionGroups).length > 0 && (
@@ -159,38 +191,9 @@ const MessageItem: React.FC<MessageItemProps> = ({
           {/* Expanded thread */}
           {showReplies && (
             <div className="mt-2 ml-0 border-l-2 border-[#0865ff]/20 pl-3 space-y-1">
-              {replies.map((r) => {
-                const rProfile = senderProfiles[r.sender_user_id];
-                const rInitials = rProfile?.full_name
-                  ? rProfile.full_name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
-                  : "?";
-                const rIsMine = r.sender_user_id === user?.id;
-                const rTime = new Date(r.created_at).toLocaleTimeString("en-US", {
-                  hour: "numeric",
-                  minute: "2-digit",
-                  hour12: true,
-                });
-                return (
-                  <div key={r.id} className="flex items-start gap-2 py-1 hover:bg-muted/40 rounded px-1 -mx-1 transition-colors">
-                    <div
-                      className={`h-7 w-7 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-semibold ${
-                        rIsMine ? "bg-[#0865ff]/20 text-[#0865ff]" : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {rInitials}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2">
-                        <span className={`text-xs font-bold ${rIsMine ? "text-[#0865ff]" : "text-foreground"}`}>
-                          {rProfile?.full_name || "Unknown"}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground">{rTime}</span>
-                      </div>
-                      <p className="text-sm whitespace-pre-wrap text-foreground">{r.message}</p>
-                    </div>
-                  </div>
-                );
-              })}
+              {replies.map((r) => (
+                <ReplyItem key={r.id} reply={r} senderProfiles={senderProfiles} onRefresh={onRefresh} />
+              ))}
               {!isLocked && (
                 <div className="flex gap-2 pt-1">
                   <Input
@@ -216,7 +219,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
         </div>
 
         {/* Hover action buttons */}
-        {hovered && !isLocked && (
+        {hovered && !isLocked && !editing && (
           <div className="absolute top-0 right-4 -translate-y-1/2 flex items-center gap-0.5 bg-background border border-border rounded-md shadow-sm px-1 py-0.5">
             <Popover>
               <PopoverTrigger asChild>
@@ -245,9 +248,110 @@ const MessageItem: React.FC<MessageItemProps> = ({
             >
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </button>
+            {isMine && (
+              <>
+                <button
+                  className="p-1 rounded hover:bg-muted transition-colors"
+                  title="Edit"
+                  onClick={() => setEditing(true)}
+                >
+                  <Pencil className="h-4 w-4 text-muted-foreground" />
+                </button>
+                <button
+                  className="p-1 rounded hover:bg-destructive/10 transition-colors"
+                  title="Delete"
+                  onClick={deleteMessage}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
+    </div>
+  );
+};
+
+// Reply sub-item with its own edit/delete
+const ReplyItem: React.FC<{ reply: any; senderProfiles: Record<string, any>; onRefresh: () => void }> = ({ reply, senderProfiles, onRefresh }) => {
+  const { user } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(reply.message);
+  const [hovered, setHovered] = useState(false);
+
+  const rProfile = senderProfiles[reply.sender_user_id];
+  const rInitials = rProfile?.full_name
+    ? rProfile.full_name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
+    : "?";
+  const rIsMine = reply.sender_user_id === user?.id;
+  const rTime = new Date(reply.created_at).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  const saveEdit = async () => {
+    if (!editText.trim()) return;
+    await supabase.from("job_messages").update({ message: editText }).eq("id", reply.id);
+    setEditing(false);
+    onRefresh();
+  };
+
+  const deleteReply = async () => {
+    await supabase.from("job_messages").delete().eq("id", reply.id);
+    onRefresh();
+  };
+
+  return (
+    <div
+      className="relative flex items-start gap-2 py-1 hover:bg-muted/40 rounded px-1 -mx-1 transition-colors"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div
+        className={`h-7 w-7 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-semibold ${
+          rIsMine ? "bg-[#0865ff]/20 text-[#0865ff]" : "bg-muted text-muted-foreground"
+        }`}
+      >
+        {rInitials}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-2">
+          <span className={`text-xs font-bold ${rIsMine ? "text-[#0865ff]" : "text-foreground"}`}>
+            {rProfile?.full_name || "Unknown"}
+          </span>
+          <span className="text-[10px] text-muted-foreground">{rTime}</span>
+        </div>
+        {editing ? (
+          <div className="flex items-center gap-2 mt-0.5">
+            <Input
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              className="h-7 text-xs flex-1"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveEdit();
+                if (e.key === "Escape") { setEditing(false); setEditText(reply.message); }
+              }}
+              autoFocus
+            />
+            <button onClick={saveEdit} className="p-0.5 rounded hover:bg-muted text-green-600"><Check className="h-3 w-3" /></button>
+            <button onClick={() => { setEditing(false); setEditText(reply.message); }} className="p-0.5 rounded hover:bg-muted text-muted-foreground"><X className="h-3 w-3" /></button>
+          </div>
+        ) : (
+          <p className="text-sm whitespace-pre-wrap text-foreground">{reply.message}</p>
+        )}
+      </div>
+      {hovered && rIsMine && !editing && (
+        <div className="absolute top-0 right-1 -translate-y-1/2 flex items-center gap-0.5 bg-background border border-border rounded-md shadow-sm px-0.5 py-0.5">
+          <button className="p-0.5 rounded hover:bg-muted transition-colors" title="Edit" onClick={() => setEditing(true)}>
+            <Pencil className="h-3 w-3 text-muted-foreground" />
+          </button>
+          <button className="p-0.5 rounded hover:bg-destructive/10 transition-colors" title="Delete" onClick={deleteReply}>
+            <Trash2 className="h-3 w-3 text-destructive" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
