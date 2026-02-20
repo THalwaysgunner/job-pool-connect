@@ -276,6 +276,7 @@ export type Database = {
           id: string
           job_id: string
           message: string
+          parent_message_id: string | null
           sender_user_id: string
         }
         Insert: {
@@ -283,6 +284,7 @@ export type Database = {
           id?: string
           job_id: string
           message: string
+          parent_message_id?: string | null
           sender_user_id: string
         }
         Update: {
@@ -290,6 +292,7 @@ export type Database = {
           id?: string
           job_id?: string
           message?: string
+          parent_message_id?: string | null
           sender_user_id?: string
         }
         Relationships: [
@@ -298,6 +301,13 @@ export type Database = {
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_messages_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "job_messages"
             referencedColumns: ["id"]
           },
         ]
@@ -401,6 +411,38 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "job_messages"
             referencedColumns: ["id"]
           },
         ]
