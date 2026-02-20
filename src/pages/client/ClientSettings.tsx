@@ -12,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, User, Building2, Shield } from "lucide-react";
 
 const docTypes = [
-  { value: "client_id", label: "Client ID (Teudat Zehut / Passport)" },
   { value: "registration_approval", label: "Company Registration Approval" },
   { value: "company_id", label: "Company ID / Identification" },
   { value: "accountant_approval", label: "Accountant Approval" },

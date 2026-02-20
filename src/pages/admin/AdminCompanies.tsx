@@ -154,10 +154,23 @@ const AdminCompanies: React.FC = () => {
               {companyProfile && (
                 <Card>
                   <CardHeader><CardTitle className="text-sm">Client Information</CardTitle></CardHeader>
-                  <CardContent className="space-y-1 text-sm">
+                   <CardContent className="space-y-2 text-sm">
                     <p><span className="font-medium">Full Name:</span> {companyProfile.full_name || "Not provided"}</p>
                     <p><span className="font-medium">Email:</span> {companyProfile.email}</p>
                     <p><span className="font-medium">ID Number:</span> {(companyProfile as any).id_number || "Not provided"}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">ID Document:</span>
+                      {(companyProfile as any).id_file_path ? (
+                        <Button size="sm" variant="outline" onClick={async () => {
+                          const { data } = await supabase.storage.from("company-documents").createSignedUrl((companyProfile as any).id_file_path, 300);
+                          if (data?.signedUrl) { setDocViewUrl(data.signedUrl); setDocViewOpen(true); }
+                        }}>
+                          <Eye className="h-3 w-3 mr-1" />View ID
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground">Not uploaded</span>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               )}
