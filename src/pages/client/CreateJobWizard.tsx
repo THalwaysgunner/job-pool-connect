@@ -29,7 +29,7 @@ const CreateJobWizard: React.FC = () => {
   const [company, setCompany] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const [businessDetails, setBusinessDetails] = useState({ name: "", category: "", details: "" });
+  const [businessDetails, setBusinessDetails] = useState({ category: "", details: "" });
   const [uploadedDocs, setUploadedDocs] = useState<Record<string, { name: string; path: string }[]>>({});
   const [paymentMethod, setPaymentMethod] = useState<string>("wire");
   const [armyAmount, setArmyAmount] = useState("");
@@ -57,7 +57,7 @@ const CreateJobWizard: React.FC = () => {
       const { data: job, error } = await supabase.from("jobs").insert({
         client_user_id: user.id,
         company_id: company.id,
-        business_name: businessDetails.name,
+        business_name: company.business_name,
         business_category: businessDetails.category,
         business_details: businessDetails.details,
         payment_method: paymentMethod as any,
@@ -108,7 +108,7 @@ const CreateJobWizard: React.FC = () => {
       {step === 0 && (
         <Card>
           <CardContent className="p-6 space-y-4">
-            <div><Label>Business Name</Label><Input value={businessDetails.name} onChange={(e) => setBusinessDetails({ ...businessDetails, name: e.target.value })} /></div>
+            <div><Label>Business Name</Label><Input value={company.business_name} disabled className="bg-muted" /></div>
             <div><Label>Business Category</Label><Input value={businessDetails.category} onChange={(e) => setBusinessDetails({ ...businessDetails, category: e.target.value })} /></div>
             <div><Label>Details</Label><Textarea value={businessDetails.details} onChange={(e) => setBusinessDetails({ ...businessDetails, details: e.target.value })} /></div>
           </CardContent>
@@ -155,7 +155,7 @@ const CreateJobWizard: React.FC = () => {
           <CardContent className="p-6 space-y-4">
             <h3 className="font-semibold">Preview</h3>
             <div className="space-y-2 text-sm">
-              <p><span className="text-muted-foreground">Business:</span> {businessDetails.name}</p>
+              <p><span className="text-muted-foreground">Business:</span> {company.business_name}</p>
               <p><span className="text-muted-foreground">Category:</span> {businessDetails.category}</p>
               <p><span className="text-muted-foreground">Details:</span> {businessDetails.details}</p>
               <p><span className="text-muted-foreground">Payment:</span> {paymentMethod.replace(/_/g, " ")}</p>
