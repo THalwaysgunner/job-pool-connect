@@ -38,6 +38,17 @@ const ClientCompany: React.FC = () => {
 
   useEffect(() => { fetchCompany(); }, [user]);
 
+  // Real-time subscription for live updates
+  useEffect(() => {
+    if (!company) return;
+    const channel = supabase
+      .channel("client-company-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "company_documents", filter: `company_id=eq.${company.id}` }, () => fetchCompany())
+      .on("postgres_changes", { event: "*", schema: "public", table: "companies", filter: `id=eq.${company.id}` }, () => fetchCompany())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [company?.id]);
+
   const saveCompany = async () => {
     setSaving(true);
     try {

@@ -79,16 +79,8 @@ const AdminCompanies: React.FC = () => {
     const category = rejectCategories.find(c => c.value === rejectCategory);
     const fullReason = `[${category?.label}] ${rejectReason}`.trim();
 
-    if (category?.requiresReupload) {
-      // Delete file from storage and remove record so client must re-upload
-      const doc = companyDocs.find(d => d.id === rejectDocDialog.docId);
-      if (doc) {
-        await supabase.storage.from("company-documents").remove([doc.file_path]);
-        await supabase.from("company_documents").delete().eq("id", rejectDocDialog.docId);
-      }
-    } else {
-      await supabase.from("company_documents").update({ status: "rejected", rejection_reason: fullReason } as any).eq("id", rejectDocDialog.docId);
-    }
+    // Always mark as rejected with reason - client can re-upload later
+    await supabase.from("company_documents").update({ status: "rejected", rejection_reason: fullReason } as any).eq("id", rejectDocDialog.docId);
 
     // Notify the client
     if (detailDialog.company) {
