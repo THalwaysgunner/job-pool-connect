@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useOutletContext } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
+  const outletContext = useOutletContext<{ setPageTitle?: (t: string) => void }>();
   const [job, setJob] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [questions, setQuestions] = useState<any[]>([]);
@@ -162,8 +163,6 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
 
   const isLocked = job?.status === "done" || job?.status === "closed_by_admin";
 
-  if (!job) return <div className="p-4 text-muted-foreground">Loading...</div>;
-
   const navItems = [
     { key: "summary", label: "Summary", icon: Info, badge: 0 },
     { key: "messages", label: "Messages", icon: MessageSquare, badge: unreadMessages },
@@ -173,14 +172,23 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
     ...(role === "client" ? [{ key: "disputes", label: "Disputes", icon: FileWarning, badge: 0 }] : []),
   ];
 
+  // Sync active tab label to layout header
+  useEffect(() => {
+    const label = navItems.find((n) => n.key === activeTab)?.label ?? "";
+    outletContext?.setPageTitle?.(label);
+  }, [activeTab]);
+
+  // Clear title on unmount
+  useEffect(() => {
+    return () => { outletContext?.setPageTitle?.(""); };
+  }, []);
+
+  if (!job) return <div className="p-4 text-muted-foreground">Loading...</div>;
+
   return (
     <div className="flex h-[calc(100vh-theme(spacing.14))] -m-6">
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Tab header */}
-        <div className="h-14 flex items-center px-6 border-b shrink-0">
-          <h2 className="text-lg font-semibold">{navItems.find((n) => n.key === activeTab)?.label}</h2>
-        </div>
         {/* Messages tab — full height chat */}
         {activeTab === "messages" && (
           <div className="flex flex-col h-full">

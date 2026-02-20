@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ const navItems = [
 const ClientLayout: React.FC = () => {
   const { signOut } = useAuth();
   const location = useLocation();
+  const [pageTitle, setPageTitle] = useState("");
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -38,11 +39,12 @@ const ClientLayout: React.FC = () => {
         </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b flex items-center justify-end px-6 gap-4 shrink-0">
+        <header className="h-14 border-b flex items-center justify-between px-6 shrink-0">
+          <h2 className="text-lg font-semibold">{pageTitle}</h2>
           <NotificationBell />
         </header>
         <main className="flex-1 p-6 overflow-y-auto">
-          <Outlet />
+          <Outlet context={{ setPageTitle }} />
         </main>
       </div>
     </div>
