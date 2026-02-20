@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Lock, Mail } from "lucide-react";
 
 const LoginPage: React.FC = () => {
   const { user, roles, loading } = useAuth();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -30,7 +32,7 @@ const LoginPage: React.FC = () => {
     try {
       await signIn(email, password);
     } catch (err: any) {
-      toast({ title: "Login failed", description: err.message, variant: "destructive" });
+      toast({ title: t("login.failed"), description: err.message, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -43,27 +45,27 @@ const LoginPage: React.FC = () => {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary">
             <Lock className="h-7 w-7 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">Sign In</CardTitle>
-          <p className="text-sm text-muted-foreground">Enter your credentials to access the system</p>
+          <CardTitle className="text-2xl">{t("login.title")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("login.subtitle")}</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("login.email")}</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input id="email" type="email" placeholder="you@example.com" className="pl-9" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Mail className="absolute start-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input id="email" type="email" placeholder="you@example.com" className="ps-9" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("login.password")}</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input id="password" type="password" placeholder="••••••••" className="pl-9" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <Lock className="absolute start-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input id="password" type="password" placeholder="••••••••" className="ps-9" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </div>
             </div>
             <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "Signing in..." : "Sign In"}
+              {submitting ? t("login.submitting") : t("login.submit")}
             </Button>
           </form>
         </CardContent>

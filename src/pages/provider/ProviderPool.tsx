@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const ProviderPool: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [jobs, setJobs] = useState<any[]>([]);
   const [preview, setPreview] = useState<any>(null);
   const [claiming, setClaiming] = useState(false);
@@ -28,15 +30,15 @@ const ProviderPool: React.FC = () => {
       const { data, error } = await supabase.rpc("claim_job", { _job_id: jobId, _provider_id: user.id });
       if (error) throw error;
       if (data) {
-        toast({ title: "Job assigned to you!" });
+        toast({ title: t("job.jobAssigned") });
         setPreview(null);
         fetchPool();
       } else {
-        toast({ title: "Job already assigned", description: "Another provider took this job.", variant: "destructive" });
+        toast({ title: t("job.jobAlreadyAssigned"), description: t("job.anotherProviderTook"), variant: "destructive" });
         fetchPool();
       }
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("generic.error"), description: err.message, variant: "destructive" });
     } finally {
       setClaiming(false);
     }
@@ -44,9 +46,9 @@ const ProviderPool: React.FC = () => {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">Job Pool</h2>
+      <h2 className="text-2xl font-bold mb-6">{t("nav.jobPool")}</h2>
       {jobs.length === 0 ? (
-        <p className="text-muted-foreground">No jobs available in the pool.</p>
+        <p className="text-muted-foreground">{t("job.noJobsInPool")}</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {jobs.map((j) => (
@@ -58,8 +60,8 @@ const ProviderPool: React.FC = () => {
                 <p className="text-sm text-muted-foreground mb-2">{j.business_category}</p>
                 <p className="text-sm mb-3 line-clamp-2">{j.business_details}</p>
                 <div className="flex items-center justify-between">
-                  <Badge>open in pool</Badge>
-                  <Button size="sm" onClick={() => setPreview(j)}>Open Preview</Button>
+                  <Badge>{t("status.open_in_pool")}</Badge>
+                  <Button size="sm" onClick={() => setPreview(j)}>{t("job.openPreview")}</Button>
                 </div>
               </CardContent>
             </Card>
@@ -73,14 +75,13 @@ const ProviderPool: React.FC = () => {
             <>
               <DialogHeader><DialogTitle>{preview.business_name}</DialogTitle></DialogHeader>
               <div className="space-y-3 text-sm">
-                <p><span className="text-muted-foreground">Category:</span> {preview.business_category}</p>
-                <p><span className="text-muted-foreground">Details:</span> {preview.business_details}</p>
-                <p><span className="text-muted-foreground">Payment:</span> {preview.payment_method.replace(/_/g, " ")}</p>
-                
-                <p><span className="text-muted-foreground">Created:</span> {new Date(preview.created_at).toLocaleDateString()}</p>
+                <p><span className="text-muted-foreground">{t("job.category")}:</span> {preview.business_category}</p>
+                <p><span className="text-muted-foreground">{t("job.details")}:</span> {preview.business_details}</p>
+                <p><span className="text-muted-foreground">{t("job.payment")}:</span> {preview.payment_method.replace(/_/g, " ")}</p>
+                <p><span className="text-muted-foreground">{t("job.created")}:</span> {new Date(preview.created_at).toLocaleDateString()}</p>
               </div>
               <Button className="w-full mt-4" onClick={() => claimJob(preview.id)} disabled={claiming}>
-                {claiming ? "Claiming..." : "Approve the Job"}
+                {claiming ? t("job.claiming") : t("job.claimJob")}
               </Button>
             </>
           )}
