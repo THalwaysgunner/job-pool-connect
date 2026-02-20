@@ -1,6 +1,5 @@
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { Globe, User, LogOut, Settings } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import {
@@ -13,7 +12,7 @@ import { Button } from "@/components/ui/button";
 
 const HeaderActions: React.FC = () => {
   const { signOut } = useAuth();
-  const navigate = useNavigate();
+  
 
   return (
     <div className="flex items-center gap-1">
@@ -33,7 +32,7 @@ const HeaderActions: React.FC = () => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuItem onClick={() => navigate("/client/settings")}>
+          <DropdownMenuItem>
             <Settings className="h-4 w-4 mr-2" />
             Account Settings
           </DropdownMenuItem>
