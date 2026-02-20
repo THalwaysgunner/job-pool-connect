@@ -42,7 +42,11 @@ const ClientSettings: React.FC = () => {
     if (!user) return;
     // Fetch profile
     supabase.from("profiles").select("*").eq("user_id", user.id).single().then(({ data }) => {
-      if (data) { setProfile(data); setProfileForm({ full_name: data.full_name || "", id_number: (data as any).id_number || "" }); }
+      if (data) {
+        setProfile(data);
+        setProfileForm({ full_name: data.full_name || "", id_number: (data as any).id_number || "" });
+        setIdFile((data as any).id_file_path || null);
+      }
     });
     // Fetch company
     fetchCompany();
@@ -59,7 +63,21 @@ const ClientSettings: React.FC = () => {
     }
   };
 
-  // Profile actions
+  const uploadIdFile = async (file: File) => {
+    if (!user) return;
+    setUploadingId(true);
+    try {
+      const path = `${user.id}/id_document_${Date.now()}_${file.name}`;
+      const { error } = await supabase.storage.from("company-documents").upload(path, file);
+      if (error) throw error;
+      await supabase.from("profiles").update({ id_file_path: path } as any).eq("user_id", user.id);
+      setIdFile(path);
+      toast({ title: "ID document uploaded" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setUploadingId(false); }
+  };
+
   const saveProfile = async () => {
     setSavingProfile(true);
     try {
@@ -177,6 +195,20 @@ const ClientSettings: React.FC = () => {
               <div>
                 <Label>ID Number (Teudat Zehut)</Label>
                 <Input value={profileForm.id_number} onChange={(e) => setProfileForm({ ...profileForm, id_number: e.target.value })} placeholder="e.g. 123456789" />
+              </div>
+              <div>
+                <Label>ID Document Upload</Label>
+                {idFile ? (
+                  <p className="text-sm text-muted-foreground mb-2">✓ ID document uploaded</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground mb-2">Please upload a copy of your ID</p>
+                )}
+                <Label className="cursor-pointer inline-block">
+                  <Button variant="outline" size="sm" asChild disabled={uploadingId}>
+                    <span><Upload className="h-3 w-3 mr-1" />{uploadingId ? "Uploading..." : idFile ? "Replace ID" : "Upload ID"}</span>
+                  </Button>
+                  <Input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => { if (e.target.files?.[0]) uploadIdFile(e.target.files[0]); }} />
+                </Label>
               </div>
               <Button onClick={saveProfile} disabled={savingProfile}>{savingProfile ? "Saving..." : "Save Changes"}</Button>
             </CardContent>
