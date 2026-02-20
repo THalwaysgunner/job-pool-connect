@@ -44,10 +44,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!mounted) return;
         if (session?.user) {
           setUser(session.user);
-          // Use setTimeout to avoid Supabase deadlock on token refresh
-          setTimeout(() => {
-            if (mounted) fetchRoles(session.user.id);
-          }, 0);
+          const { data } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id);
+          if (mounted && data) {
+            setRoles(data.map((r: any) => r.role as AppRole));
+          }
         } else {
           setUser(null);
           setRoles([]);
