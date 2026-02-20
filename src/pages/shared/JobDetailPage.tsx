@@ -344,7 +344,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
               <button
                 key={item.key}
                 onClick={() => handleTabChange(item.key)}
-                className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl p-4 text-sm font-medium transition-colors border ${activeTab === item.key ? "bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-border shadow-sm" : "bg-background text-sidebar-foreground border-border hover:bg-sidebar-accent/50"}`}
+                className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl p-4 text-sm font-medium transition-colors border ${activeTab === item.key ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:bg-primary/10 hover:border-primary hover:text-primary"}`}
               >
                 <item.icon className="h-5 w-5" />
                 <span>{item.label}</span>
