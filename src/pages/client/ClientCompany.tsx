@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, X } from "lucide-react";
+import { Upload, X, FileText, RefreshCw } from "lucide-react";
 
 const docTypes = [
   { value: "registration_approval", label: "Company Registration Approval" },
@@ -125,20 +125,43 @@ const ClientCompany: React.FC = () => {
 
       {company && (
         <Card className="mb-6">
-          <CardHeader><CardTitle>Documents</CardTitle></CardHeader>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Documents</CardTitle>
+              <Button variant="ghost" size="sm" onClick={fetchCompany}><RefreshCw className="h-3 w-3 mr-1" />Refresh</Button>
+            </div>
+          </CardHeader>
           <CardContent className="space-y-4">
             {docTypes.map((dt) => {
               const existing = docs.filter((d) => d.doc_type === dt.value);
               return (
                 <div key={dt.value} className="border rounded-lg p-3">
                   <p className="font-medium text-sm mb-2">{dt.label}</p>
+                  {existing.length === 0 && (
+                    <p className="text-sm text-muted-foreground mb-2">No document uploaded</p>
+                  )}
                   {existing.map((d) => (
-                    <p key={d.id} className="text-sm text-muted-foreground">✓ {d.file_name}</p>
+                    <div key={d.id} className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{d.file_name}</span>
+                      </div>
+                      <Badge className={
+                        d.status === "approved" ? "bg-green-600 hover:bg-green-700 text-white" :
+                        d.status === "rejected" ? "bg-red-600 hover:bg-red-700 text-white" :
+                        "bg-gray-400 hover:bg-gray-500 text-white"
+                      }>
+                        {d.status}
+                      </Badge>
+                    </div>
                   ))}
-                  {isEditable && (
+                  {existing.some((d) => d.status === "rejected") && existing.filter(d => d.status === "rejected").map(d => (
+                    d.rejection_reason && <p key={`reason-${d.id}`} className="text-xs text-destructive mb-2">Rejection reason: {d.rejection_reason}</p>
+                  ))}
+                  {(isEditable || existing.length === 0 || existing.some(d => d.status === "rejected")) && (
                     <Label className="cursor-pointer mt-2 inline-block">
                       <Button variant="outline" size="sm" asChild disabled={uploading}>
-                        <span><Upload className="h-3 w-3 mr-1" />Upload</span>
+                        <span><Upload className="h-3 w-3 mr-1" />{existing.length > 0 ? "Re-upload" : "Upload"}</span>
                       </Button>
                       <Input type="file" className="hidden" onChange={(e) => { if (e.target.files?.[0]) uploadDoc(dt.value, e.target.files[0]); }} />
                     </Label>
