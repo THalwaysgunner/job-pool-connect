@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, User, Building2 } from "lucide-react";
+import { Upload, User, Building2, Shield } from "lucide-react";
 
 const docTypes = [
   { value: "client_id", label: "Client ID (Teudat Zehut / Passport)" },
@@ -176,6 +176,7 @@ const ClientSettings: React.FC = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" />Profile</TabsTrigger>
           <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" />Company</TabsTrigger>
+          <TabsTrigger value="account" className="gap-2"><Shield className="h-4 w-4" />Account</TabsTrigger>
         </TabsList>
 
         {/* ─── PROFILE TAB ─── */}
@@ -213,7 +214,10 @@ const ClientSettings: React.FC = () => {
               <Button onClick={saveProfile} disabled={savingProfile}>{savingProfile ? "Saving..." : "Save Changes"}</Button>
             </CardContent>
           </Card>
+        </TabsContent>
 
+        {/* ─── ACCOUNT TAB ─── */}
+        <TabsContent value="account" className="space-y-6">
           <Card>
             <CardHeader><CardTitle>Change Password</CardTitle></CardHeader>
             <CardContent className="space-y-4">
