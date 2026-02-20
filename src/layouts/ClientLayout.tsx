@@ -18,7 +18,7 @@ const ClientLayout: React.FC = () => {
   return (
     <div className="flex h-screen overflow-hidden">
       <aside className="w-64 border-r bg-sidebar text-sidebar-foreground flex flex-col shrink-0">
-        <div className="p-4 border-b border-sidebar-border">
+        <div className="h-14 flex items-center px-4 border-b border-sidebar-border shrink-0">
           <h1 className="text-lg font-bold text-sidebar-primary">Client Panel</h1>
         </div>
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
