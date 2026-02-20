@@ -30,11 +30,17 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
   const [newPR, setNewPR] = useState({ title: "", amount: "", details: "" });
   const [disputeReason, setDisputeReason] = useState("");
   const [activeTab, setActiveTab] = useState("summary");
-  const [seenMessages, setSeenMessages] = useState<number | null>(null);
-  const [seenQuestions, setSeenQuestions] = useState<number | null>(null);
-  const [seenPayments, setSeenPayments] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const initializedRef = useRef(false);
+
+  // Persist seen counts in localStorage so they survive navigation/refresh
+  const seenKey = (tab: string) => `job_seen_${id}_${tab}`;
+  const getSeenCount = (tab: string): number => {
+    const val = localStorage.getItem(seenKey(tab));
+    return val !== null ? parseInt(val, 10) : -1; // -1 means never initialized
+  };
+  const setSeenCount = (tab: string, count: number) => {
+    localStorage.setItem(seenKey(tab), String(count));
+  };
 
   const fetchAll = async () => {
     if (!id) return;
@@ -55,23 +61,20 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
     if (dis.data) setDisputes(dis.data);
     if (docs.data) setJobDocs(docs.data);
 
-    // Initialize seen counts on first load only
-    if (!initializedRef.current) {
-      initializedRef.current = true;
-      setSeenMessages(m.data?.length ?? 0);
-      setSeenQuestions(q.data?.length ?? 0);
-      setSeenPayments(pr.data?.length ?? 0);
-    }
+    // First time ever visiting this job? Initialize seen counts
+    if (getSeenCount("messages") === -1) setSeenCount("messages", m.data?.length ?? 0);
+    if (getSeenCount("questions") === -1) setSeenCount("questions", q.data?.length ?? 0);
+    if (getSeenCount("payments") === -1) setSeenCount("payments", pr.data?.length ?? 0);
   };
 
   useEffect(() => { fetchAll(); }, [id]);
 
-  // Mark as seen only when user switches TO a tab
+  // Mark as seen ONLY when user clicks into the specific tab
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    if (tab === "messages") setSeenMessages(messages.length);
-    if (tab === "questions") setSeenQuestions(questions.length);
-    if (tab === "payments") setSeenPayments(paymentRequests.length);
+    if (tab === "messages") setSeenCount("messages", messages.length);
+    if (tab === "questions") setSeenCount("questions", questions.length);
+    if (tab === "payments") setSeenCount("payments", paymentRequests.length);
   };
 
   // Auto-scroll messages
@@ -79,15 +82,15 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  // Also mark seen if user is already on the tab and sends their own message
+  // If user is already on the tab, keep seen count in sync (e.g. they send a message themselves)
   useEffect(() => {
-    if (activeTab === "messages") setSeenMessages(messages.length);
+    if (activeTab === "messages") setSeenCount("messages", messages.length);
   }, [messages.length]);
   useEffect(() => {
-    if (activeTab === "questions") setSeenQuestions(questions.length);
+    if (activeTab === "questions") setSeenCount("questions", questions.length);
   }, [questions.length]);
   useEffect(() => {
-    if (activeTab === "payments") setSeenPayments(paymentRequests.length);
+    if (activeTab === "payments") setSeenCount("payments", paymentRequests.length);
   }, [paymentRequests.length]);
 
   // Realtime for messages, questions, payments, deliverables
@@ -103,9 +106,9 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
     return () => { supabase.removeChannel(ch); };
   }, [id]);
 
-  const unreadMessages = seenMessages !== null ? Math.max(0, messages.length - seenMessages) : 0;
-  const unreadQuestions = seenQuestions !== null ? Math.max(0, questions.length - seenQuestions) : 0;
-  const unreadPayments = seenPayments !== null ? Math.max(0, paymentRequests.length - seenPayments) : 0;
+  const unreadMessages = Math.max(0, messages.length - getSeenCount("messages"));
+  const unreadQuestions = Math.max(0, questions.length - getSeenCount("questions"));
+  const unreadPayments = Math.max(0, paymentRequests.length - getSeenCount("payments"));
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !user || !id) return;
