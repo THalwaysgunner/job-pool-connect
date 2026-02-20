@@ -174,7 +174,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
   ];
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.14)-theme(spacing.12))] -m-6">
+    <div className="flex h-[calc(100vh-theme(spacing.14))] -m-6">
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Messages tab — full height chat */}
