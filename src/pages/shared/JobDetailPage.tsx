@@ -198,9 +198,9 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
                   const isMine = m.sender_user_id === user?.id;
                   return (
                     <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[75%] px-3 py-2 rounded-2xl ${isMine ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}>
+                      <div className={`max-w-[75%] px-3 py-2 rounded-2xl ${isMine ? "bg-[#0865ff] text-white rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}>
                         <p className="text-sm whitespace-pre-wrap">{m.message}</p>
-                        <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/70 text-right" : "text-muted-foreground"}`}>{new Date(m.created_at).toLocaleString()}</p>
+                        <p className={`text-[10px] mt-1 ${isMine ? "text-white/70 text-right" : "text-muted-foreground"}`}>{new Date(m.created_at).toLocaleString()}</p>
                       </div>
                     </div>
                   );
@@ -211,7 +211,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
             {!isLocked && (
               <div className="border-t p-4 flex gap-2 shrink-0 bg-background">
                 <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === "Enter" && sendMessage()} className="flex-1" />
-                <Button onClick={sendMessage} size="icon"><Send className="h-4 w-4" /></Button>
+                <Button onClick={sendMessage} size="icon" className="bg-[#0865ff] hover:bg-[#0865ff]/90 text-white"><Send className="h-4 w-4" /></Button>
               </div>
             )}
           </div>
