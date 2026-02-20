@@ -20,6 +20,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
   const outletContext = useOutletContext<{ setPageTitle?: (t: string) => void }>();
   const [job, setJob] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
+  const [senderProfiles, setSenderProfiles] = useState<Record<string, any>>({});
   const [questions, setQuestions] = useState<any[]>([]);
   const [paymentRequests, setPaymentRequests] = useState<any[]>([]);
   const [deliverables, setDeliverables] = useState<any[]>([]);
@@ -55,7 +56,19 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
       supabase.from("job_documents").select("*").eq("job_id", id),
     ]);
     if (j.data) setJob(j.data);
-    if (m.data) setMessages(m.data);
+    if (m.data) {
+      setMessages(m.data);
+      // Fetch sender profiles
+      const uniqueIds = [...new Set(m.data.map((msg: any) => msg.sender_user_id))];
+      if (uniqueIds.length > 0) {
+        const { data: profiles } = await supabase.from("profiles").select("user_id, full_name, email").in("user_id", uniqueIds);
+        if (profiles) {
+          const map: Record<string, any> = {};
+          profiles.forEach((p: any) => { map[p.user_id] = p; });
+          setSenderProfiles(map);
+        }
+      }
+    }
     if (q.data) setQuestions(q.data);
     if (pr.data) setPaymentRequests(pr.data);
     if (d.data) setDeliverables(d.data);
@@ -193,16 +206,46 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
         {activeTab === "messages" && (
           <div className="flex flex-col h-full">
             <ScrollArea className="flex-1 p-4">
-              <div className="space-y-3">
-                {messages.map((m) => {
+              <div className="space-y-1">
+                {messages.map((m, idx) => {
                   const isMine = m.sender_user_id === user?.id;
+                  const msgDate = new Date(m.created_at);
+                  const dateStr = msgDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+                  const timeStr = msgDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+                  const prevDate = idx > 0 ? new Date(messages[idx - 1].created_at).toDateString() : null;
+                  const showDateSep = idx === 0 || msgDate.toDateString() !== prevDate;
+                  const profile = senderProfiles[m.sender_user_id];
+                  const initials = profile?.full_name ? profile.full_name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2) : "?";
+
                   return (
-                    <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[75%] px-3 py-2 rounded-2xl ${isMine ? "bg-[#0865ff] text-white rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}>
-                        <p className="text-sm whitespace-pre-wrap">{m.message}</p>
-                        <p className={`text-[10px] mt-1 ${isMine ? "text-white/70 text-right" : "text-muted-foreground"}`}>{new Date(m.created_at).toLocaleString()}</p>
+                    <React.Fragment key={m.id}>
+                      {showDateSep && (
+                        <div className="flex items-center justify-center my-4">
+                          <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">{dateStr}</span>
+                        </div>
+                      )}
+                      <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                        {!isMine && (
+                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground shrink-0 mt-1 mr-2">
+                            {initials}
+                          </div>
+                        )}
+                        <div className="flex flex-col max-w-[75%]">
+                          <div className={`flex items-baseline gap-2 mb-0.5 ${isMine ? "justify-end" : ""}`}>
+                            <span className={`text-xs font-semibold ${isMine ? "text-[#0865ff]" : "text-foreground"}`}>{profile?.full_name || "Unknown"}</span>
+                            <span className="text-[10px] text-muted-foreground">{timeStr}</span>
+                          </div>
+                          <div className={`px-3 py-2 rounded-2xl ${isMine ? "bg-[#0865ff] text-white rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}>
+                            <p className="text-sm whitespace-pre-wrap">{m.message}</p>
+                          </div>
+                        </div>
+                        {isMine && (
+                          <div className="h-8 w-8 rounded-full bg-[#0865ff]/20 flex items-center justify-center text-xs font-semibold text-[#0865ff] shrink-0 mt-1 ml-2">
+                            {initials}
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    </React.Fragment>
                   );
                 })}
                 <div ref={messagesEndRef} />
