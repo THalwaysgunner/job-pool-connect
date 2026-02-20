@@ -256,19 +256,21 @@ const AdminCompanies: React.FC = () => {
       <Dialog open={docViewOpen} onOpenChange={(o) => { setDocViewOpen(o); if (!o) setViewingDoc(null); }}>
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
           <div className="flex items-center justify-between">
-            <DialogHeader><DialogTitle>Document Preview</DialogTitle></DialogHeader>
-            {viewingDoc && docStatusBadge((viewingDoc as any).status)}
-          </div>
-          {viewingDoc && (
-            <div className="flex gap-2">
-              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => approveDoc(viewingDoc.id)}>
-                <Check className="h-3 w-3 mr-1" />Approve
-              </Button>
-              <Button size="sm" variant="destructive" onClick={() => { setRejectDocDialog({ open: true, docId: viewingDoc.id }); setRejectReason(""); }}>
-                <X className="h-3 w-3 mr-1" />Reject
-              </Button>
+            <div>
+              <DialogHeader><DialogTitle>Document Preview</DialogTitle></DialogHeader>
+              {viewingDoc && <div className="mt-1">{docStatusBadge((viewingDoc as any).status)}</div>}
             </div>
-          )}
+            {viewingDoc && (
+              <div className="flex gap-2">
+                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => approveDoc(viewingDoc.id)}>
+                  <Check className="h-3 w-3 mr-1" />Approve
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => { setRejectDocDialog({ open: true, docId: viewingDoc.id }); setRejectReason(""); }}>
+                  <X className="h-3 w-3 mr-1" />Reject
+                </Button>
+              </div>
+            )}
+          </div>
           {docViewUrl && (
             <iframe src={docViewUrl} className="w-full flex-1 min-h-[60vh] border rounded" title="Document preview" />
           )}
