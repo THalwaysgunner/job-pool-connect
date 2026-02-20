@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { LogOut, LayoutDashboard, Layers, Briefcase } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 
@@ -14,6 +16,28 @@ const navItems = [
 const ProviderLayout: React.FC = () => {
   const { signOut } = useAuth();
   const location = useLocation();
+  const [poolCount, setPoolCount] = useState(0);
+
+  useEffect(() => {
+    const fetchPoolCount = async () => {
+      const { count } = await supabase
+        .from("jobs")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "open_in_pool");
+      setPoolCount(count || 0);
+    };
+
+    fetchPoolCount();
+
+    const channel = supabase
+      .channel("pool-count-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "jobs" }, () => {
+        fetchPoolCount();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -27,6 +51,11 @@ const ProviderLayout: React.FC = () => {
               <Button variant={location.pathname === item.path ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                 <item.icon className="h-4 w-4" />
                 {item.label}
+                {item.path === "/provider/pool" && poolCount > 0 && (
+                  <Badge variant="destructive" className="ml-auto h-5 min-w-5 flex items-center justify-center p-0 text-xs">
+                    {poolCount}
+                  </Badge>
+                )}
               </Button>
             </Link>
           ))}
