@@ -76,7 +76,7 @@ const ProviderPool: React.FC = () => {
                 <p><span className="text-muted-foreground">Category:</span> {preview.business_category}</p>
                 <p><span className="text-muted-foreground">Details:</span> {preview.business_details}</p>
                 <p><span className="text-muted-foreground">Payment:</span> {preview.payment_method.replace(/_/g, " ")}</p>
-                {preview.army_deposit_amount && <p><span className="text-muted-foreground">Army Deposit:</span> ₪{preview.army_deposit_amount}</p>}
+                
                 <p><span className="text-muted-foreground">Created:</span> {new Date(preview.created_at).toLocaleDateString()}</p>
               </div>
               <Button className="w-full mt-4" onClick={() => claimJob(preview.id)} disabled={claiming}>
