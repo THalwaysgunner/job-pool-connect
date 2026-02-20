@@ -228,7 +228,15 @@ const ClientSettings: React.FC = () => {
 
           {company && (
             <Card>
-              <CardHeader><CardTitle>Documents</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Documents</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {docs.filter(d => (d as any).status === "approved").length}/{docs.length} approved
+                    {docs.filter(d => (d as any).status === "rejected").length > 0 && ` · ${docs.filter(d => (d as any).status === "rejected").length} rejected`}
+                  </span>
+                </CardTitle>
+              </CardHeader>
               <CardContent className="space-y-4">
                 {docTypes.map((dt) => {
                   const existing = docs.filter((d) => d.doc_type === dt.value);
@@ -236,12 +244,23 @@ const ClientSettings: React.FC = () => {
                     <div key={dt.value} className="border rounded-lg p-3">
                       <p className="font-medium text-sm mb-2">{dt.label}</p>
                       {existing.map((d) => (
-                        <p key={d.id} className="text-sm text-muted-foreground">✓ {d.file_name}</p>
+                        <div key={d.id} className="flex items-center gap-2 mb-1">
+                          <Badge variant={
+                            (d as any).status === "approved" ? "default" : 
+                            (d as any).status === "rejected" ? "destructive" : "secondary"
+                          } className="text-xs">
+                            {(d as any).status}
+                          </Badge>
+                          <span className="text-sm">{d.file_name}</span>
+                          {(d as any).status === "rejected" && (d as any).rejection_reason && (
+                            <span className="text-xs text-destructive">— {(d as any).rejection_reason}</span>
+                          )}
+                        </div>
                       ))}
-                      {isCompanyEditable && (
+                      {(isCompanyEditable || existing.some(d => (d as any).status === "rejected")) && (
                         <Label className="cursor-pointer mt-2 inline-block">
                           <Button variant="outline" size="sm" asChild disabled={uploading}>
-                            <span><Upload className="h-3 w-3 mr-1" />Upload</span>
+                            <span><Upload className="h-3 w-3 mr-1" />{existing.some(d => (d as any).status === "rejected") ? "Re-upload" : "Upload"}</span>
                           </Button>
                           <Input type="file" className="hidden" onChange={(e) => { if (e.target.files?.[0]) uploadDoc(dt.value, e.target.files[0]); }} />
                         </Label>

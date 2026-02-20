@@ -113,6 +113,8 @@ export type Database = {
           file_name: string
           file_path: string
           id: string
+          rejection_reason: string | null
+          status: string
           uploaded_at: string
         }
         Insert: {
@@ -121,6 +123,8 @@ export type Database = {
           file_name: string
           file_path: string
           id?: string
+          rejection_reason?: string | null
+          status?: string
           uploaded_at?: string
         }
         Update: {
@@ -129,6 +133,8 @@ export type Database = {
           file_name?: string
           file_path?: string
           id?: string
+          rejection_reason?: string | null
+          status?: string
           uploaded_at?: string
         }
         Relationships: [
