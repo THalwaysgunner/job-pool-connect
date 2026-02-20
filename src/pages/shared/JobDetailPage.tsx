@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Download, Send, Check, AlertTriangle, Upload, MessageSquare, HelpCircle, CreditCard, Package, FileWarning, Info } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import MessageItem from "@/components/job/MessageItem";
 
 const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ role }) => {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +26,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
   const [deliverables, setDeliverables] = useState<any[]>([]);
   const [disputes, setDisputes] = useState<any[]>([]);
   const [jobDocs, setJobDocs] = useState<any[]>([]);
+  const [reactions, setReactions] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [newQuestion, setNewQuestion] = useState("");
   const [newAnswer, setNewAnswer] = useState<Record<string, string>>({});
@@ -46,7 +47,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
 
   const fetchAll = async () => {
     if (!id) return;
-    const [j, m, q, pr, d, dis, docs] = await Promise.all([
+    const [j, m, q, pr, d, dis, docs, rxn] = await Promise.all([
       supabase.from("jobs").select("*").eq("id", id).single(),
       supabase.from("job_messages").select("*").eq("job_id", id).order("created_at"),
       supabase.from("job_questions").select("*").eq("job_id", id).order("created_at"),
@@ -54,6 +55,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
       supabase.from("deliverables").select("*").eq("job_id", id),
       supabase.from("disputes").select("*").eq("job_id", id).order("created_at"),
       supabase.from("job_documents").select("*").eq("job_id", id),
+      supabase.from("message_reactions").select("*"),
     ]);
     if (j.data) setJob(j.data);
     if (m.data) {
@@ -74,6 +76,11 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
     if (d.data) setDeliverables(d.data);
     if (dis.data) setDisputes(dis.data);
     if (docs.data) setJobDocs(docs.data);
+    // Filter reactions to only messages in this job
+    if (rxn.data && m.data) {
+      const msgIds = new Set(m.data.map((msg: any) => msg.id));
+      setReactions(rxn.data.filter((r: any) => msgIds.has(r.message_id)));
+    }
 
     // First time ever visiting this job? Initialize seen counts
     if (getSeenCount("messages") === -1) setSeenCount("messages", m.data?.length ?? 0);
@@ -116,6 +123,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
       .on("postgres_changes", { event: "*", schema: "public", table: "job_questions", filter: `job_id=eq.${id}` }, () => fetchAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "payment_requests", filter: `job_id=eq.${id}` }, () => fetchAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "deliverables", filter: `job_id=eq.${id}` }, () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "message_reactions" }, () => fetchAll())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [id]);
@@ -205,47 +213,47 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
         {/* Messages tab — full height chat */}
         {activeTab === "messages" && (
           <div className="flex flex-col h-full">
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-1">
-                {messages.map((m, idx) => {
-                  const isMine = m.sender_user_id === user?.id;
-                  const msgDate = new Date(m.created_at);
-                  const today = new Date();
-                  const yesterday = new Date();
-                  yesterday.setDate(today.getDate() - 1);
-                  const isToday = msgDate.toDateString() === today.toDateString();
-                  const isYesterday = msgDate.toDateString() === yesterday.toDateString();
-                  const dateStr = isToday ? "Today" : isYesterday ? "Yesterday" : msgDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-                  const timeStr = msgDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-                  const prevDate = idx > 0 ? new Date(messages[idx - 1].created_at).toDateString() : null;
-                  const showDateSep = idx === 0 || msgDate.toDateString() !== prevDate;
-                  const profile = senderProfiles[m.sender_user_id];
-                  const initials = profile?.full_name ? profile.full_name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2) : "?";
+            <ScrollArea className="flex-1">
+              <div className="space-y-0">
+                {(() => {
+                  const topLevel = messages.filter((m) => !m.parent_message_id);
+                  return topLevel.map((m, idx) => {
+                    const msgDate = new Date(m.created_at);
+                    const today = new Date();
+                    const yesterday = new Date();
+                    yesterday.setDate(today.getDate() - 1);
+                    const isToday = msgDate.toDateString() === today.toDateString();
+                    const isYesterday = msgDate.toDateString() === yesterday.toDateString();
+                    const dateStr = isToday ? "Today" : isYesterday ? "Yesterday" : msgDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+                    const prevTopLevel = idx > 0 ? topLevel[idx - 1] : null;
+                    const prevDate = prevTopLevel ? new Date(prevTopLevel.created_at).toDateString() : null;
+                    const showDateSep = idx === 0 || msgDate.toDateString() !== prevDate;
+                    const msgReplies = messages.filter((r) => r.parent_message_id === m.id);
+                    const msgReactions = reactions.filter((r) => r.message_id === m.id);
 
-                  return (
-                    <React.Fragment key={m.id}>
-                      {showDateSep && (
-                        <div className="flex items-center my-4 gap-3">
-                          <div className="flex-1 h-px bg-border" />
-                          <span className="text-xs text-muted-foreground border border-border px-3 py-1 rounded-full shrink-0">{dateStr}</span>
-                          <div className="flex-1 h-px bg-border" />
-                        </div>
-                      )}
-                      <div className="flex items-start gap-2 py-1 px-2 -mx-2 rounded-md hover:bg-muted/50 transition-colors">
-                        <div className={`h-9 w-9 rounded-lg shrink-0 flex items-center justify-center text-xs font-semibold ${isMine ? "bg-[#0865ff]/20 text-[#0865ff]" : "bg-muted text-muted-foreground"}`}>
-                          {initials}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-baseline gap-2">
-                            <span className={`text-sm font-bold ${isMine ? "text-[#0865ff]" : "text-foreground"}`}>{profile?.full_name || "Unknown"}</span>
-                            <span className="text-[11px] text-muted-foreground">{timeStr}</span>
+                    return (
+                      <React.Fragment key={m.id}>
+                        {showDateSep && (
+                          <div className="flex items-center my-4 gap-3 px-4">
+                            <div className="flex-1 h-px bg-border" />
+                            <span className="text-xs text-muted-foreground border border-border px-3 py-1 rounded-full shrink-0">{dateStr}</span>
+                            <div className="flex-1 h-px bg-border" />
                           </div>
-                          <p className="text-sm whitespace-pre-wrap text-foreground">{m.message}</p>
-                        </div>
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
+                        )}
+                        <MessageItem
+                          message={m}
+                          replies={msgReplies}
+                          reactions={msgReactions}
+                          senderProfiles={senderProfiles}
+                          isLocked={isLocked}
+                          jobId={id!}
+                          onRefresh={fetchAll}
+                          allMessages={messages}
+                        />
+                      </React.Fragment>
+                    );
+                  });
+                })()}
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
