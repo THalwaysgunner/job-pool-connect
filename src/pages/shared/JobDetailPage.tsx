@@ -197,7 +197,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
               </div>
             </ScrollArea>
             {!isLocked && (
-              <div className="border-t p-3 flex gap-2 shrink-0 bg-background">
+              <div className="border-t p-4 flex gap-2 shrink-0 bg-background">
                 <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." onKeyDown={(e) => e.key === "Enter" && sendMessage()} className="flex-1" />
                 <Button onClick={sendMessage} size="icon"><Send className="h-4 w-4" /></Button>
               </div>
