@@ -16,7 +16,7 @@ import AdminCompanies from "@/pages/admin/AdminCompanies";
 import AdminLegal from "@/pages/admin/AdminLegal";
 import AdminAlerts from "@/pages/admin/AdminAlerts";
 import ClientDashboard from "@/pages/client/ClientDashboard";
-import ClientCompany from "@/pages/client/ClientCompany";
+import ClientSettings from "@/pages/client/ClientSettings";
 import ClientJobs from "@/pages/client/ClientJobs";
 import CreateJobWizard from "@/pages/client/CreateJobWizard";
 import ProviderDashboard from "@/pages/provider/ProviderDashboard";
@@ -55,7 +55,7 @@ const App = () => (
             <Route element={<ProtectedRoute allowedRoles={["client"]} />}>
               <Route element={<ClientLayout />}>
                 <Route path="/client" element={<ClientDashboard />} />
-                <Route path="/client/company" element={<ClientCompany />} />
+                <Route path="/client/settings" element={<ClientSettings />} />
                 <Route path="/client/jobs" element={<ClientJobs />} />
                 <Route path="/client/jobs/new" element={<CreateJobWizard />} />
                 <Route path="/client/jobs/:id" element={<JobDetailPage role="client" />} />
