@@ -277,8 +277,8 @@ const AdminCompanies: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Overall company approve/reject */}
-              {detailDialog.company.status === "submitted_for_approval" && (
+              {/* Overall company approve/reject - only when ALL docs are approved */}
+              {detailDialog.company.status === "submitted_for_approval" && companyDocs.length > 0 && companyDocs.every(d => (d as any).status === "approved") && (
                 <div className="flex gap-3">
                   <Button onClick={() => approveCompany(detailDialog.company.id)} className="flex-1">
                     <Check className="h-4 w-4 mr-1" />Approve Company
@@ -287,6 +287,9 @@ const AdminCompanies: React.FC = () => {
                     <X className="h-4 w-4 mr-1" />Reject Company
                   </Button>
                 </div>
+              )}
+              {detailDialog.company.status === "submitted_for_approval" && companyDocs.length > 0 && !companyDocs.every(d => (d as any).status === "approved") && (
+                <p className="text-sm text-muted-foreground text-center py-2">Review and approve all documents before approving the company.</p>
               )}
             </div>
           )}
