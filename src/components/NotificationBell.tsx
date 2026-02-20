@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { formatDistanceToNow } from "date-fns";
 const NotificationBell: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
 
@@ -44,7 +46,6 @@ const NotificationBell: React.FC = () => {
   };
 
   const handleNotificationClick = async (n: any) => {
-    // Mark as read immediately in local state for instant feedback
     if (!n.is_read) {
       setNotifications((prev) => prev.map((notif) => notif.id === n.id ? { ...notif, is_read: true } : notif));
       await supabase.from("notifications").update({ is_read: true }).eq("id", n.id);
@@ -58,10 +59,10 @@ const NotificationBell: React.FC = () => {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="relative h-9 w-9">
+          <Bell className="h-5 w-5 text-muted-foreground" />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs" variant="destructive">
+            <Badge className="absolute -top-1 -end-1 h-5 w-5 flex items-center justify-center p-0 text-xs" variant="destructive">
               {unreadCount}
             </Badge>
           )}
@@ -69,14 +70,14 @@ const NotificationBell: React.FC = () => {
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between p-3 border-b">
-          <h4 className="font-semibold text-sm">Notifications</h4>
+          <h4 className="font-semibold text-sm">{t("notifications.title")}</h4>
           {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={markAllRead}>Mark all read</Button>
+            <Button variant="ghost" size="sm" className="text-xs h-7" onClick={markAllRead}>{t("notifications.markAllRead")}</Button>
           )}
         </div>
         <ScrollArea className="h-72">
           {notifications.length === 0 ? (
-            <p className="text-sm text-muted-foreground p-4 text-center">No notifications</p>
+            <p className="text-sm text-muted-foreground p-4 text-center">{t("notifications.empty")}</p>
           ) : (
             notifications.map((n) => (
               <div key={n.id} onClick={() => handleNotificationClick(n)} className={`p-3 border-b last:border-0 cursor-pointer hover:bg-accent/80 transition-colors ${!n.is_read ? "bg-accent/50" : ""}`}>
