@@ -11,15 +11,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, ChevronLeft, ChevronRight, Check } from "lucide-react";
 
-const steps = ["Business Details", "Documents", "Payment Method", "Preview & Submit"];
+const steps = ["Business Details", "Payment Method", "Preview & Submit"];
 
-const docTypes = [
-  { value: "tax_payer", label: "Tax Payer Document" },
-  { value: "bituah_leumi", label: "Bituah Leumi Document" },
-  { value: "company_id_doc", label: "אישור פתיחת תיק עוסק מורשה" },
-  { value: "bank_approval", label: "אישור ניהול חשבון" },
-  { value: "other", label: "Other Documents" },
-];
 
 const CreateJobWizard: React.FC = () => {
   const { user } = useAuth();
@@ -30,7 +23,6 @@ const CreateJobWizard: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const [businessDetails, setBusinessDetails] = useState({ category: "", details: "" });
-  const [uploadedDocs, setUploadedDocs] = useState<Record<string, { name: string; path: string }[]>>({});
   const [paymentMethod, setPaymentMethod] = useState<string>("wire");
   const [armyAmount, setArmyAmount] = useState("");
 
@@ -39,16 +31,6 @@ const CreateJobWizard: React.FC = () => {
     supabase.from("companies").select("*").eq("client_user_id", user.id).eq("status", "approved").limit(1).single().then(({ data }) => setCompany(data));
   }, [user]);
 
-  const handleDocUpload = async (docType: string, file: File) => {
-    const path = `temp/${user!.id}/${docType}_${Date.now()}_${file.name}`;
-    const { error } = await supabase.storage.from("job-documents").upload(path, file);
-    if (error) { toast({ title: "Upload error", description: error.message, variant: "destructive" }); return; }
-    setUploadedDocs((prev) => ({
-      ...prev,
-      [docType]: [...(prev[docType] || []), { name: file.name, path }],
-    }));
-    toast({ title: `${file.name} uploaded` });
-  };
 
   const handleSubmit = async () => {
     if (!company || !user) return;
@@ -67,13 +49,6 @@ const CreateJobWizard: React.FC = () => {
 
       if (error) throw error;
 
-      // Insert doc references
-      const allDocs = Object.entries(uploadedDocs).flatMap(([type, files]) =>
-        files.map((f) => ({ job_id: job.id, doc_type: type, file_name: f.name, file_path: f.path }))
-      );
-      if (allDocs.length > 0) {
-        await supabase.from("job_documents").insert(allDocs);
-      }
 
       toast({ title: "Job submitted to pool!" });
       navigate("/client/jobs");
@@ -118,25 +93,6 @@ const CreateJobWizard: React.FC = () => {
       {step === 1 && (
         <Card>
           <CardContent className="p-6 space-y-4">
-            {docTypes.map((dt) => (
-              <div key={dt.value} className="border rounded-lg p-3">
-                <p className="font-medium text-sm mb-2">{dt.label}</p>
-                {(uploadedDocs[dt.value] || []).map((f, i) => (
-                  <p key={i} className="text-sm text-muted-foreground">✓ {f.name}</p>
-                ))}
-                <Label className="cursor-pointer mt-2 inline-block">
-                  <Button variant="outline" size="sm" asChild><span><Upload className="h-3 w-3 mr-1" />Upload</span></Button>
-                  <Input type="file" className="hidden" multiple={dt.value === "other"} onChange={(e) => { if (e.target.files) Array.from(e.target.files).forEach((f) => handleDocUpload(dt.value, f)); }} />
-                </Label>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {step === 2 && (
-        <Card>
-          <CardContent className="p-6 space-y-4">
             <Label>How do you pay?</Label>
             <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
               <div className="flex items-center space-x-2"><RadioGroupItem value="wire" id="wire" /><Label htmlFor="wire">Wire</Label></div>
@@ -150,7 +106,7 @@ const CreateJobWizard: React.FC = () => {
         </Card>
       )}
 
-      {step === 3 && (
+      {step === 2 && (
         <Card>
           <CardContent className="p-6 space-y-4">
             <h3 className="font-semibold">Preview</h3>
@@ -160,7 +116,7 @@ const CreateJobWizard: React.FC = () => {
               <p><span className="text-muted-foreground">Details:</span> {businessDetails.details}</p>
               <p><span className="text-muted-foreground">Payment:</span> {paymentMethod.replace(/_/g, " ")}</p>
               {paymentMethod === "army_deposit" && <p><span className="text-muted-foreground">Amount:</span> ₪{armyAmount}</p>}
-              <p><span className="text-muted-foreground">Documents:</span> {Object.values(uploadedDocs).flat().length} files</p>
+              
             </div>
           </CardContent>
         </Card>
