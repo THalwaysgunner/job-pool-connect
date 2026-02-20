@@ -58,7 +58,8 @@ const AdminCompanies: React.FC = () => {
       const { data: docs } = await supabase.from("company_documents").select("*").eq("company_id", detailDialog.company.id);
       if (docs) setCompanyDocs(docs);
     }
-    if (viewingDoc?.id === docId) setViewingDoc({ ...viewingDoc, status: "approved", rejection_reason: null });
+    setDocViewOpen(false);
+    setViewingDoc(null);
   };
 
   const rejectDoc = async () => {
@@ -71,7 +72,8 @@ const AdminCompanies: React.FC = () => {
       const { data: docs } = await supabase.from("company_documents").select("*").eq("company_id", detailDialog.company.id);
       if (docs) setCompanyDocs(docs);
     }
-    if (viewingDoc?.id === rejectDocDialog.docId) setViewingDoc({ ...viewingDoc, status: "rejected", rejection_reason: rejectReason });
+    setDocViewOpen(false);
+    setViewingDoc(null);
   };
 
   const approveCompany = async (id: string) => {
