@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
@@ -21,71 +21,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchRoles = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    if (data) {
-      setRoles(data.map((r: any) => r.role as AppRole));
+  const loadRoles = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+      console.log("Roles fetched:", data, "Error:", error);
+      if (data) {
+        setRoles(data.map((r: any) => r.role as AppRole));
+      }
+    } catch (e) {
+      console.error("Failed to fetch roles:", e);
     }
-  };
-
-  useEffect(() => {
-    let mounted = true;
-
-    const timeout = setTimeout(() => {
-      if (mounted) setLoading(false);
-    }, 5000);
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!mounted) return;
-        if (session?.user) {
-          setUser(session.user);
-          // Decouple DB call from auth callback to avoid deadlock
-          supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id)
-            .then(({ data }) => {
-              if (mounted && data) {
-                setRoles(data.map((r: any) => r.role as AppRole));
-              }
-              if (mounted) setLoading(false);
-            });
-        } else {
-          setUser(null);
-          setRoles([]);
-          setLoading(false);
-        }
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return;
-      if (session?.user) {
-        setUser(session.user);
-        fetchRoles(session.user.id).then(() => {
-          if (mounted) setLoading(false);
-        });
-      } else {
-        setLoading(false);
-      }
-    }).catch(() => {
-      if (mounted) setLoading(false);
-    });
-
-    return () => {
-      mounted = false;
-      clearTimeout(timeout);
-      subscription.unsubscribe();
-    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    // Manually set user and load roles after successful sign-in
+    if (data.user) {
+      setUser(data.user);
+      await loadRoles(data.user.id);
+    }
   };
 
   const signOut = async () => {
@@ -93,6 +51,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setRoles([]);
   };
+
+  useEffect(() => {
+    let mounted = true;
+
+    // Check initial session
+    const initSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted) return;
+        if (session?.user) {
+          setUser(session.user);
+          await loadRoles(session.user.id);
+        }
+      } catch (e) {
+        console.error("getSession error:", e);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    initSession();
+
+    // Listen for auth changes (sign out, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!mounted) return;
+        if (!session?.user) {
+          setUser(null);
+          setRoles([]);
+        }
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [loadRoles]);
 
   return (
     <AuthContext.Provider value={{ user, roles, loading, signIn, signOut }}>
