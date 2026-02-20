@@ -169,14 +169,15 @@ const ClientSettings: React.FC = () => {
 
   return (
     <div className="max-w-2xl">
-      <h2 className="text-2xl font-bold mb-6">Settings</h2>
-
       <Tabs defaultValue="profile">
-        <TabsList className="mb-6">
-          <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" />Profile</TabsTrigger>
-          <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" />Company</TabsTrigger>
-          <TabsTrigger value="account" className="gap-2"><Shield className="h-4 w-4" />Account</TabsTrigger>
-        </TabsList>
+        <div className="sticky top-0 z-10 bg-background pb-4">
+          <h2 className="text-2xl font-bold mb-6">Settings</h2>
+          <TabsList>
+            <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" />Profile</TabsTrigger>
+            <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" />Company</TabsTrigger>
+            <TabsTrigger value="account" className="gap-2"><Shield className="h-4 w-4" />Account</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* ─── PROFILE TAB ─── */}
         <TabsContent value="profile" className="space-y-6">
