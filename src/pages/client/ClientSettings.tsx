@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,15 +12,16 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, User, Building2, Shield } from "lucide-react";
 
-const docTypes = [
-  { value: "registration_approval", label: "Company Registration Approval" },
-  { value: "company_id", label: "Company ID / Identification" },
-  { value: "accountant_approval", label: "Accountant Approval" },
-];
-
 const ClientSettings: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { toast } = useToast();
+
+  const docTypes = [
+    { value: "registration_approval", labelKey: "docType.registration_approval" },
+    { value: "company_id", labelKey: "docType.company_id" },
+    { value: "accountant_approval", labelKey: "docType.accountant_approval" },
+  ];
 
   // Profile state
   const [profile, setProfile] = useState<any>(null);
@@ -39,7 +41,6 @@ const ClientSettings: React.FC = () => {
 
   useEffect(() => {
     if (!user) return;
-    // Fetch profile
     supabase.from("profiles").select("*").eq("user_id", user.id).single().then(({ data }) => {
       if (data) {
         setProfile(data);
@@ -47,7 +48,6 @@ const ClientSettings: React.FC = () => {
         setIdFile((data as any).id_file_path || null);
       }
     });
-    // Fetch company
     fetchCompany();
   }, [user]);
 
@@ -71,9 +71,9 @@ const ClientSettings: React.FC = () => {
       if (error) throw error;
       await supabase.from("profiles").update({ id_file_path: path } as any).eq("user_id", user.id);
       setIdFile(path);
-      toast({ title: "ID document uploaded" });
+      toast({ title: t("company.docUploaded") });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("generic.error"), description: err.message, variant: "destructive" });
     } finally { setUploadingId(false); }
   };
 
@@ -81,31 +81,30 @@ const ClientSettings: React.FC = () => {
     setSavingProfile(true);
     try {
       await supabase.from("profiles").update({ full_name: profileForm.full_name, id_number: profileForm.id_number } as any).eq("user_id", user!.id);
-      toast({ title: "Profile updated" });
+      toast({ title: t("settings.profileUpdated") });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("generic.error"), description: err.message, variant: "destructive" });
     } finally { setSavingProfile(false); }
   };
 
   const changePassword = async () => {
     if (passwordForm.password !== passwordForm.confirm) {
-      toast({ title: "Passwords don't match", variant: "destructive" }); return;
+      toast({ title: t("settings.passwordsDontMatch"), variant: "destructive" }); return;
     }
     if (passwordForm.password.length < 6) {
-      toast({ title: "Password must be at least 6 characters", variant: "destructive" }); return;
+      toast({ title: t("settings.passwordTooShort"), variant: "destructive" }); return;
     }
     setSavingPassword(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: passwordForm.password });
       if (error) throw error;
-      toast({ title: "Password updated" });
+      toast({ title: t("settings.passwordUpdated") });
       setPasswordForm({ password: "", confirm: "" });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("generic.error"), description: err.message, variant: "destructive" });
     } finally { setSavingPassword(false); }
   };
 
-  // Company actions
   const saveCompany = async () => {
     setSavingCompany(true);
     try {
@@ -116,10 +115,10 @@ const ClientSettings: React.FC = () => {
         if (error) throw error;
         setCompany(data);
       }
-      toast({ title: "Company saved" });
+      toast({ title: t("company.companySaved") });
       fetchCompany();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("generic.error"), description: err.message, variant: "destructive" });
     } finally { setSavingCompany(false); }
   };
 
@@ -131,114 +130,102 @@ const ClientSettings: React.FC = () => {
       const { error } = await supabase.storage.from("company-documents").upload(path, file);
       if (error) throw error;
       await supabase.from("company_documents").insert({ company_id: company.id, doc_type: docType, file_name: file.name, file_path: path });
-      toast({ title: "Document uploaded" });
+      toast({ title: t("company.docUploaded") });
       fetchCompany();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("generic.error"), description: err.message, variant: "destructive" });
     } finally { setUploading(false); }
   };
 
   const submitForApproval = async () => {
     if (!company) return;
     await supabase.from("companies").update({ status: "submitted_for_approval" }).eq("id", company.id);
-    
-    // Notify all admins
     try {
       const { data: adminRoles } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
       if (adminRoles) {
         for (const admin of adminRoles) {
           await supabase.functions.invoke("create-notification", {
-            body: {
-              user_id: admin.user_id,
-              title: "Company Submitted for Approval",
-              message: `Company "${company.business_name}" has been submitted for approval.`,
-              link: "/admin/companies",
-            },
+            body: { user_id: admin.user_id, title: "Company Submitted for Approval", message: `Company "${company.business_name}" has been submitted for approval.`, link: "/admin/companies" },
           });
         }
       }
-    } catch (e) {
-      console.error("Failed to send notifications:", e);
-    }
-    
-    toast({ title: "Submitted for approval" });
+    } catch (e) { console.error("Failed to send notifications:", e); }
+    toast({ title: t("company.submittedForApproval") });
     fetchCompany();
   };
 
   const isCompanyEditable = !company || company.status === "draft" || company.status === "rejected";
+  const translateStatus = (status: string) => t(`status.${status}`) || status.replace(/_/g, " ");
 
   return (
     <div className="max-w-2xl">
-      <h2 className="text-2xl font-bold mb-6">Settings</h2>
+      <h2 className="text-2xl font-bold mb-6">{t("settings.title")}</h2>
 
       <Tabs defaultValue="profile">
         <TabsList className="mb-6">
-          <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" />Profile</TabsTrigger>
-          <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" />Company</TabsTrigger>
-          <TabsTrigger value="account" className="gap-2"><Shield className="h-4 w-4" />Account</TabsTrigger>
+          <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" />{t("settings.profile")}</TabsTrigger>
+          <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" />{t("settings.company")}</TabsTrigger>
+          <TabsTrigger value="account" className="gap-2"><Shield className="h-4 w-4" />{t("settings.account")}</TabsTrigger>
         </TabsList>
 
-        {/* ─── PROFILE TAB ─── */}
         <TabsContent value="profile" className="space-y-6">
           <Card>
-            <CardHeader><CardTitle>Personal Information</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("settings.personalInfo")}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Email</Label>
+                <Label>{t("settings.email")}</Label>
                 <Input value={user?.email || ""} disabled className="bg-muted" />
-                <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("settings.emailCantChange")}</p>
               </div>
               <div>
-                <Label>Full Name</Label>
+                <Label>{t("settings.fullName")}</Label>
                 <Input value={profileForm.full_name} onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })} />
               </div>
               <div>
-                <Label>ID Number (Teudat Zehut)</Label>
-                <Input value={profileForm.id_number} onChange={(e) => setProfileForm({ ...profileForm, id_number: e.target.value })} placeholder="e.g. 123456789" />
+                <Label>{t("settings.idNumber")}</Label>
+                <Input value={profileForm.id_number} onChange={(e) => setProfileForm({ ...profileForm, id_number: e.target.value })} placeholder={t("settings.idPlaceholder")} />
               </div>
               <div>
-                <Label>ID Document Upload</Label>
+                <Label>{t("settings.idDocUpload")}</Label>
                 {idFile ? (
-                  <p className="text-sm text-muted-foreground mb-2">✓ ID document uploaded</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t("settings.idUploaded")}</p>
                 ) : (
-                  <p className="text-sm text-muted-foreground mb-2">Please upload a copy of your ID</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t("settings.pleaseUploadId")}</p>
                 )}
                 <Label className="cursor-pointer inline-block">
                   <Button variant="outline" size="sm" asChild disabled={uploadingId}>
-                    <span><Upload className="h-3 w-3 mr-1" />{uploadingId ? "Uploading..." : idFile ? "Replace ID" : "Upload ID"}</span>
+                    <span><Upload className="h-3 w-3 me-1" />{uploadingId ? t("settings.uploading") : idFile ? t("settings.replaceId") : t("settings.uploadId")}</span>
                   </Button>
                   <Input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => { if (e.target.files?.[0]) uploadIdFile(e.target.files[0]); }} />
                 </Label>
               </div>
-              <Button onClick={saveProfile} disabled={savingProfile}>{savingProfile ? "Saving..." : "Save Changes"}</Button>
+              <Button onClick={saveProfile} disabled={savingProfile}>{savingProfile ? t("settings.saving") : t("settings.saveChanges")}</Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* ─── ACCOUNT TAB ─── */}
         <TabsContent value="account" className="space-y-6">
           <Card>
-            <CardHeader><CardTitle>Change Password</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("settings.changePassword")}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>New Password</Label>
+                <Label>{t("settings.newPassword")}</Label>
                 <Input type="password" value={passwordForm.password} onChange={(e) => setPasswordForm({ ...passwordForm, password: e.target.value })} />
               </div>
               <div>
-                <Label>Confirm Password</Label>
+                <Label>{t("settings.confirmPassword")}</Label>
                 <Input type="password" value={passwordForm.confirm} onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })} />
               </div>
-              <Button onClick={changePassword} disabled={savingPassword}>{savingPassword ? "Updating..." : "Update Password"}</Button>
+              <Button onClick={changePassword} disabled={savingPassword}>{savingPassword ? t("settings.updating") : t("settings.updatePassword")}</Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* ─── COMPANY TAB ─── */}
         <TabsContent value="company" className="space-y-6">
           {company && (
             <div className="flex items-center gap-3">
               <Badge variant={company.status === "approved" ? "default" : company.status === "rejected" ? "destructive" : "secondary"}>
-                {company.status.replace(/_/g, " ")}
+                {translateStatus(company.status)}
               </Badge>
               {company.status === "rejected" && company.rejection_reason && (
                 <p className="text-sm text-destructive">{company.rejection_reason}</p>
@@ -247,18 +234,18 @@ const ClientSettings: React.FC = () => {
           )}
 
           <Card>
-            <CardHeader><CardTitle>Company Details</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{t("company.details")}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Business Name</Label>
+                <Label>{t("company.businessName")}</Label>
                 <Input value={companyForm.business_name} onChange={(e) => setCompanyForm({ ...companyForm, business_name: e.target.value })} disabled={!isCompanyEditable} />
               </div>
               <div>
-                <Label>Details</Label>
+                <Label>{t("company.detailsLabel")}</Label>
                 <Textarea value={companyForm.details} onChange={(e) => setCompanyForm({ ...companyForm, details: e.target.value })} disabled={!isCompanyEditable} />
               </div>
               {isCompanyEditable && (
-                <Button onClick={saveCompany} disabled={savingCompany}>{savingCompany ? "Saving..." : company ? "Update" : "Create Company"}</Button>
+                <Button onClick={saveCompany} disabled={savingCompany}>{savingCompany ? t("settings.saving") : company ? t("company.update") : t("company.createCompany")}</Button>
               )}
             </CardContent>
           </Card>
@@ -267,10 +254,10 @@ const ClientSettings: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span>Documents</span>
+                  <span>{t("company.documents")}</span>
                   <span className="text-xs font-normal text-muted-foreground">
-                    {docs.filter(d => (d as any).status === "approved").length}/{docs.length} approved
-                    {docs.filter(d => (d as any).status === "rejected").length > 0 && ` · ${docs.filter(d => (d as any).status === "rejected").length} rejected`}
+                    {docs.filter(d => (d as any).status === "approved").length}/{docs.length} {t("status.approved")}
+                    {docs.filter(d => (d as any).status === "rejected").length > 0 && ` · ${docs.filter(d => (d as any).status === "rejected").length} ${t("status.rejected")}`}
                   </span>
                 </CardTitle>
               </CardHeader>
@@ -279,14 +266,14 @@ const ClientSettings: React.FC = () => {
                   const existing = docs.filter((d) => d.doc_type === dt.value);
                   return (
                     <div key={dt.value} className="border rounded-lg p-3">
-                      <p className="font-medium text-sm mb-2">{dt.label}</p>
+                      <p className="font-medium text-sm mb-2">{t(dt.labelKey)}</p>
                       {existing.map((d) => (
                         <div key={d.id} className="flex items-center gap-2 mb-1">
                           <Badge variant={
                             (d as any).status === "approved" ? "default" : 
                             (d as any).status === "rejected" ? "destructive" : "secondary"
                           } className="text-xs">
-                            {(d as any).status}
+                            {translateStatus((d as any).status)}
                           </Badge>
                           <span className="text-sm">{d.file_name}</span>
                           {(d as any).status === "rejected" && (d as any).rejection_reason && (
@@ -297,7 +284,7 @@ const ClientSettings: React.FC = () => {
                       {(isCompanyEditable || existing.some(d => (d as any).status === "rejected")) && (
                         <Label className="cursor-pointer mt-2 inline-block">
                           <Button variant="outline" size="sm" asChild disabled={uploading}>
-                            <span><Upload className="h-3 w-3 mr-1" />{existing.some(d => (d as any).status === "rejected") ? "Re-upload" : "Upload"}</span>
+                            <span><Upload className="h-3 w-3 me-1" />{existing.some(d => (d as any).status === "rejected") ? t("company.reUpload") : t("deliverable.upload")}</span>
                           </Button>
                           <Input type="file" className="hidden" onChange={(e) => { if (e.target.files?.[0]) uploadDoc(dt.value, e.target.files[0]); }} />
                         </Label>
@@ -310,7 +297,7 @@ const ClientSettings: React.FC = () => {
           )}
 
           {company && isCompanyEditable && company.status !== "submitted_for_approval" && (
-            <Button onClick={submitForApproval} className="w-full">Submit for Approval</Button>
+            <Button onClick={submitForApproval} className="w-full">{t("company.submitForApproval")}</Button>
           )}
         </TabsContent>
       </Tabs>

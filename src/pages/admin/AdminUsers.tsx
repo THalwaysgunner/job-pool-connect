@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
 
 const AdminUsers: React.FC = () => {
+  const { t } = useLanguage();
   const [users, setUsers] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", full_name: "", role: "client" });
@@ -33,17 +35,14 @@ const AdminUsers: React.FC = () => {
   const handleCreate = async () => {
     setSubmitting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke("create-user", {
-        body: form,
-      });
+      const res = await supabase.functions.invoke("create-user", { body: form });
       if (res.error) throw new Error(res.error.message);
-      toast({ title: "User created successfully" });
+      toast({ title: t("admin.users.userCreated") });
       setOpen(false);
       setForm({ email: "", password: "", full_name: "", role: "client" });
       fetchUsers();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("generic.error"), description: err.message, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -55,32 +54,34 @@ const AdminUsers: React.FC = () => {
     return "default";
   };
 
+  const translateRole = (role: string) => t(`admin.users.${role}`) || role;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Users Management</h2>
+        <h2 className="text-2xl font-bold">{t("admin.users.title")}</h2>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" />Create User</Button>
+            <Button><Plus className="h-4 w-4 me-2" />{t("admin.users.createUser")}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Create New User</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("admin.users.createNewUser")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div><Label>Full Name</Label><Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
-              <div><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-              <div><Label>Password</Label><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></div>
+              <div><Label>{t("admin.users.fullName")}</Label><Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
+              <div><Label>{t("admin.users.email")}</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+              <div><Label>{t("admin.users.password")}</Label><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></div>
               <div>
-                <Label>Role</Label>
+                <Label>{t("admin.users.role")}</Label>
                 <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="client">Client</SelectItem>
-                    <SelectItem value="provider">Provider</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="client">{t("admin.users.client")}</SelectItem>
+                    <SelectItem value="provider">{t("admin.users.provider")}</SelectItem>
+                    <SelectItem value="admin">{t("admin.users.admin")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="w-full" onClick={handleCreate} disabled={submitting}>{submitting ? "Creating..." : "Create User"}</Button>
+              <Button className="w-full" onClick={handleCreate} disabled={submitting}>{submitting ? t("admin.users.creating") : t("admin.users.createUser")}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -89,10 +90,10 @@ const AdminUsers: React.FC = () => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Created</TableHead>
+            <TableHead>{t("admin.users.name")}</TableHead>
+            <TableHead>{t("admin.users.email")}</TableHead>
+            <TableHead>{t("admin.users.role")}</TableHead>
+            <TableHead>{t("admin.users.created")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -103,7 +104,7 @@ const AdminUsers: React.FC = () => {
               <TableCell>
                 <div className="flex gap-1">
                   {u.roles.map((r: string) => (
-                    <Badge key={r} variant={roleBadgeVariant(r) as any}>{r}</Badge>
+                    <Badge key={r} variant={roleBadgeVariant(r) as any}>{translateRole(r)}</Badge>
                   ))}
                 </div>
               </TableCell>
