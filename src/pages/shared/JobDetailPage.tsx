@@ -231,7 +231,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
                           <div className="flex-1 h-px bg-border" />
                         </div>
                       )}
-                      <div className="flex items-start gap-2 py-1">
+                      <div className="flex items-start gap-2 py-1 px-2 -mx-2 rounded-md hover:bg-muted/50 transition-colors">
                         <div className={`h-9 w-9 rounded-lg shrink-0 flex items-center justify-center text-xs font-semibold ${isMine ? "bg-[#0865ff]/20 text-[#0865ff]" : "bg-muted text-muted-foreground"}`}>
                           {initials}
                         </div>
