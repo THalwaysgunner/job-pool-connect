@@ -48,7 +48,7 @@ const AdminLayout: React.FC = () => {
           <h2 className="text-lg font-semibold">{pageTitle}</h2>
           <HeaderActions />
         </header>
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-6 overflow-y-auto text-start">
           <Outlet context={{ setPageTitle }} />
         </main>
       </div>
