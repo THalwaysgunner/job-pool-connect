@@ -236,8 +236,8 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
         )}
 
         {activeTab === "summary" && (
-          <ScrollArea className="flex-1 p-6">
-            <div className="space-y-3 text-sm text-start">
+          <div className="flex-1 p-6 overflow-y-auto">
+            <div className="space-y-3 text-sm">
               <p><span className="text-muted-foreground">{t("job.details")}:</span> {job.business_details}</p>
               <p><span className="text-muted-foreground">{t("job.payment")}:</span> {job.payment_method.replace(/_/g, " ")}</p>
               {job.army_deposit_amount && <p><span className="text-muted-foreground">{t("job.armyDeposit")}:</span> ₪{job.army_deposit_amount}</p>}
@@ -254,11 +254,11 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
                 <Button onClick={markWaitingApproval}>{t("job.markWaitingApproval")}</Button>
               )}
             </div>
-          </ScrollArea>
+          </div>
         )}
 
         {activeTab === "questions" && (
-          <ScrollArea className="flex-1 p-6">
+          <div className="flex-1 p-6 overflow-y-auto">
             <div className="space-y-4">
               {questions.map((q) => (
                 <div key={q.id} className="border rounded-lg p-3">
@@ -280,11 +280,11 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
         )}
 
         {activeTab === "payments" && (
-          <ScrollArea className="flex-1 p-6">
+          <div className="flex-1 p-6 overflow-y-auto">
             <div className="space-y-4">
               {paymentRequests.map((pr) => (
                 <div key={pr.id} className="border rounded-lg p-3">
@@ -312,17 +312,17 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
         )}
 
         {activeTab === "deliverables" && (
-          <ScrollArea className="flex-1 p-6">
+          <div className="flex-1 p-6 overflow-y-auto">
             <DeliverableSection role={role} jobId={id!} deliverables={deliverables} isLocked={isLocked} onRefresh={fetchAll} />
-          </ScrollArea>
+          </div>
         )}
 
         {activeTab === "disputes" && role === "client" && (
-          <ScrollArea className="flex-1 p-6">
+          <div className="flex-1 p-6 overflow-y-auto">
             <div className="space-y-4">
               {disputes.map((d) => (
                 <div key={d.id} className="border rounded-lg p-3">
@@ -338,7 +338,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
         )}
       </div>
 
