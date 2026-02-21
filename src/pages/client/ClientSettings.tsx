@@ -158,11 +158,11 @@ const ClientSettings: React.FC = () => {
   const translateStatus = (status: string) => t(`status.${status}`) || status.replace(/_/g, " ");
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl text-start">
       <h2 className="text-2xl font-bold mb-6">{t("settings.title")}</h2>
 
       <Tabs defaultValue="profile">
-        <TabsList className="mb-6">
+        <TabsList className="mb-6 w-full justify-start">
           <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" />{t("settings.profile")}</TabsTrigger>
           <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" />{t("settings.company")}</TabsTrigger>
           <TabsTrigger value="account" className="gap-2"><Shield className="h-4 w-4" />{t("settings.account")}</TabsTrigger>
