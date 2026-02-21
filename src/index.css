@@ -101,6 +101,11 @@ All colors MUST be HSL.
     scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
   }
 
+  /* Force Radix ScrollArea to inherit RTL direction */
+  [data-radix-scroll-area-viewport] {
+    direction: inherit !important;
+  }
+
   *::-webkit-scrollbar {
     width: 6px;
   }
