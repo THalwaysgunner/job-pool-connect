@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import { Upload, User, Building2, Shield } from "lucide-react";
 
 const ClientSettings: React.FC = () => {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { toast } = useToast();
 
   const docTypes = [
@@ -158,10 +159,10 @@ const ClientSettings: React.FC = () => {
   const translateStatus = (status: string) => t(`status.${status}`) || status.replace(/_/g, " ");
 
   return (
-    <div className="max-w-2xl text-start">
+    <div className="max-w-2xl" dir={isRTL ? "rtl" : "ltr"}>
       <h2 className="text-2xl font-bold mb-6">{t("settings.title")}</h2>
 
-      <Tabs defaultValue="profile">
+      <Tabs defaultValue="profile" dir={isRTL ? "rtl" : "ltr"}>
         <TabsList className="mb-6 w-full justify-start">
           <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" />{t("settings.profile")}</TabsTrigger>
           <TabsTrigger value="company" className="gap-2"><Building2 className="h-4 w-4" />{t("settings.company")}</TabsTrigger>
