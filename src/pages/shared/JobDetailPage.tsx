@@ -188,7 +188,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
 
   return (
     <div className="flex h-[calc(100vh-theme(spacing.14))] -m-6">
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 text-start">
         {activeTab === "messages" && (
           <div className="flex flex-col h-full">
             <ScrollArea className="flex-1">
@@ -237,7 +237,7 @@ const JobDetailPage: React.FC<{ role: "client" | "provider" | "admin" }> = ({ ro
 
         {activeTab === "summary" && (
           <ScrollArea className="flex-1 p-6">
-            <div className="space-y-3 text-sm">
+            <div className="space-y-3 text-sm text-start">
               <p><span className="text-muted-foreground">{t("job.details")}:</span> {job.business_details}</p>
               <p><span className="text-muted-foreground">{t("job.payment")}:</span> {job.payment_method.replace(/_/g, " ")}</p>
               {job.army_deposit_amount && <p><span className="text-muted-foreground">{t("job.armyDeposit")}:</span> ₪{job.army_deposit_amount}</p>}
