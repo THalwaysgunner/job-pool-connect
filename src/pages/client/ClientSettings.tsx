@@ -269,18 +269,19 @@ const ClientSettings: React.FC = () => {
                     <div key={dt.value} className="border rounded-lg p-3">
                       <p className="font-medium text-sm mb-2">{t(dt.labelKey)}</p>
                       {existing.map((d) => (
-                        <div key={d.id} className="flex items-center gap-2 mb-1">
-                          <Badge variant={
-                            (d as any).status === "approved" ? "default" : 
-                            (d as any).status === "rejected" ? "destructive" : "secondary"
-                          } className="text-xs">
+                        <div key={d.id} className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-sm">{d.file_name}</span>
+                          <Badge className={
+                            (d as any).status === "approved" ? "bg-green-600 hover:bg-green-700 text-white text-xs" :
+                            (d as any).status === "rejected" ? "bg-red-600 hover:bg-red-700 text-white text-xs" :
+                            "text-xs"
+                          }>
                             {translateStatus((d as any).status)}
                           </Badge>
-                          <span className="text-sm">{d.file_name}</span>
-                          {(d as any).status === "rejected" && (d as any).rejection_reason && (
-                            <span className="text-xs text-destructive">— {(d as any).rejection_reason}</span>
-                          )}
                         </div>
+                      ))}
+                      {existing.some(d => (d as any).status === "rejected" && (d as any).rejection_reason) && existing.filter(d => (d as any).status === "rejected" && (d as any).rejection_reason).map(d => (
+                        <p key={`reason-${d.id}`} className="text-xs text-destructive mb-1">{(d as any).rejection_reason}</p>
                       ))}
                       {(isCompanyEditable || existing.some(d => (d as any).status === "rejected")) && (
                         <Label className="cursor-pointer mt-2 inline-block">
