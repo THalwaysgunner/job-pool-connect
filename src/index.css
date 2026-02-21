@@ -106,6 +106,18 @@ All colors MUST be HSL.
     direction: inherit !important;
   }
 
+  /* Force all elements to inherit direction in RTL mode */
+  [dir="rtl"] input,
+  [dir="rtl"] textarea,
+  [dir="rtl"] select {
+    text-align: start;
+    direction: rtl;
+  }
+
+  [dir="rtl"] [data-radix-collection-item] {
+    direction: rtl;
+  }
+
   *::-webkit-scrollbar {
     width: 6px;
   }
